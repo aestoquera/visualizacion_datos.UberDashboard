@@ -13,11 +13,57 @@ from data import data, pickup_markers, center_lat, center_lon
 # ----------------------------------------------------------------------
 
 # El contenido del mapa y los gráficos para la pestaña "Viajes"
+
 viajes_content = html.Div([
     dbc.Row([
         # Columna Izquierda (Mapa - 2/3)
         dbc.Col([
-            dbc.Button("Mostrando salidas", id="toggle-view-btn", color="light", className="mb-3 w-100"),
+            # 1. Controles: Usamos un dbc.Row para alinear horizontalmente el botón y el DatePicker
+            dbc.CardBody([
+                dbc.Row(
+                    [
+                        # Columna para el Botón (Aproximadamente 4 unidades de ancho)
+                        dbc.Col(
+                            dbc.Button(
+                                "Mostrando salidas", 
+                                id="toggle-view-btn", 
+                                color="light", 
+                                className="w-100", # w-100 para ocupar todo el ancho de la columna
+                            ),
+                            # Ajustamos la altura del botón para que esté centrado verticalmente
+                            # y definimos el ancho de la columna (e.g., 4 de 12)
+                            width=4, 
+                            className="d-flex align-items-center mb-3" 
+                        ),
+                        
+                        # Columna para el Filtro de Fecha (Aproximadamente 8 unidades de ancho)
+                        dbc.Col(
+                            html.Div([
+                                # a. H6 (encima)
+                                html.H6(
+                                    "Filtro por Fecha de Recogida", 
+                                    className="text-secondary mb-0" # mb-0 para pegar al DatePicker
+                                ),
+                                # b. DatePickerRange (debajo)
+                                dcc.DatePickerRange(
+                                    id='date-range-picker',
+                                    min_date_allowed=data['tpep_pickup_datetime'].min(),
+                                    max_date_allowed=data['tpep_pickup_datetime'].max(),
+                                    start_date=data['tpep_pickup_datetime'].min(),
+                                    end_date=data['tpep_pickup_datetime'].max(),
+                                    className="mb-3",
+                                    # 2. FIX: Usamos zIndex para forzar el calendario a estar ENCIMA del mapa
+                                    style={'zIndex': 1000} 
+                                ),
+                            ]),
+                            width=8
+                        ),
+                    ], 
+                    className="g-1" # g-0 elimina el espaciado horizontal (gutter) entre columnas
+                ),
+            ]),
+            
+            # Bloque del Mapa
             dbc.Card([
                 dbc.CardHeader("Mapa Interactivo de Viajes", className="fw-bold bg-dark text-light"), 
                 dbc.CardBody(
@@ -145,6 +191,8 @@ app_layout = dbc.Container([
     # Stores (Globales)
     dcc.Store(id='map-memory', data='global_view'),
     dcc.Store(id='filtered-data-store', data=data.to_dict('records')),
+    dcc.Store(id='full-filtered-data-store', data=[]),
+    dcc.Store(id='limited-markers-store', data={}),
     
     # Fila 1: Título y Pestañas
     dbc.Row(className="mb-2 mt-2 align-items-end", children=[
