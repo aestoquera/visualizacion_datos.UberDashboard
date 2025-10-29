@@ -1,0 +1,180 @@
+# layout.py
+# Define el layout completo de la aplicación y el contenido de las pestañas.
+
+from dash import html, dcc
+import dash_bootstrap_components as dbc
+import dash_leaflet as dl
+
+# Importar variables pre-calculadas del módulo de datos
+from data import data, pickup_markers, center_lat, center_lon
+
+# ----------------------------------------------------------------------
+# --- CONTENIDO DE LAS PESTAÑAS ---
+# ----------------------------------------------------------------------
+
+# El contenido del mapa y los gráficos para la pestaña "Viajes"
+viajes_content = html.Div([
+    dbc.Row([
+        # Columna Izquierda (Mapa - 2/3)
+        dbc.Col([
+            dbc.Button("Mostrando salidas", id="toggle-view-btn", color="light", className="mb-3 w-100"),
+            dbc.Card([
+                dbc.CardHeader("Mapa Interactivo de Viajes", className="fw-bold bg-dark text-light"), 
+                dbc.CardBody(
+                    dl.Map(
+                        id="map",
+                        center=[center_lat, center_lon],
+                        zoom=13,
+                        style={'width': '100%', 'height': '600px'}, 
+                        children=[dl.TileLayer()] + pickup_markers
+                    )
+                )
+            ], className="shadow-lg border-light")
+        ], width=8),
+
+        # Columna Derecha (Gráficos - 1/3)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Análisis de Viajes Seleccionados", className="fw-bold bg-dark text-light"),
+                dbc.CardBody([
+                    dcc.Dropdown(
+                        id='analysis-dropdown', 
+                        options=[
+                            {'label': 'Número de pasajeros', 'value': 'passengers'},
+                            {'label': 'Distribución del tiempo de viaje', 'value': 'trip_time'},
+                            {'label': 'Distribución de la distancia de viaje', 'value': 'trip_distance'}
+                        ],
+                        value='passengers',
+                        clearable=False,
+                        className="mb-3 text-dark",
+                        style={'backgroundColor': 'white'} 
+                    ),
+                    html.Div(id='map-info', className="mb-3 p-2 border rounded border-light bg-secondary"), 
+                    dcc.Graph(id='analysis-graph', style={'height': '490px'}) 
+                ], className="p-3")
+            ], className="shadow-lg border-light")
+        ], width=4)
+    ], className="mt-4")
+], className="p-4")
+
+# Contenido para la pestaña Distritos
+distritos_content = html.Div([
+    dbc.Row([
+        # Columna Izquierda (Gráfico)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader(id="distritos-graph-header", className="fw-bold bg-dark text-light"),
+                dbc.CardBody([
+                    dcc.Graph(id='distritos-graph', style={'height': '650px'})
+                ])
+            ], className="shadow-lg border-light")
+        ], width=9),
+
+        # Columna Derecha (Controles)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Control de Métrica", className="fw-bold bg-dark text-light"),
+                dbc.CardBody([
+                    html.P("Seleccione la visualización:", className="text-light"),
+                    dcc.Dropdown(
+                        id='distritos-dropdown',
+                        options=[
+                            {'label': 'Mostrar Distancia Promedio (Heatmap)', 'value': 'distance'},
+                            {'label': 'Mostrar Tiempo Promedio (Heatmap)', 'value': 'time'},
+                            {'label': 'Comparar Tiempo vs Distancia (Pirámide)', 'value': 'pyramid'}
+                        ],
+                        value='distance',
+                        clearable=False,
+                        className="mb-3 text-dark",
+                        style={'backgroundColor': 'white'} 
+                    )
+                ])
+            ], className="shadow-lg border-light")
+        ], width=3)
+    ], className="mt-4")
+], className="p-4")
+
+# ----------------------------------------------------------------------
+# --- CONTENIDO DE LA PESTAÑA PAGOS ---
+# ----------------------------------------------------------------------
+
+pagos_content = html.Div([
+    dbc.Row([
+        # --- Columna Izquierda: Waffle Plot (2/3) --- (AHORA AQUI)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Distribución de Tipos de Pago por Costo (Waffle)", className="fw-bold bg-dark text-light"),
+                dbc.CardBody(
+                    # Este Div será llenado por el callback con el Waffle Plot generado en HTML
+                    html.Div(
+                        id='waffle-plot-container', 
+                        style={'height': '650px', 'overflowY': 'auto'}
+                    ),
+                    className="p-3"
+                )
+            ], className="shadow-lg border-light")
+        ], width=8), # Ocupa 2/3 del ancho (8 unidades)
+
+        # --- Columna Derecha: Gráfico Sankey (1/3) --- (AHORA AQUI)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Flujo de Ingresos y Deducciones (Sankey)", className="fw-bold bg-dark text-light"),
+                dbc.CardBody(
+                    dcc.Graph(
+                        id='sankey-graph', 
+                        style={'height': '650px'}
+                    ),
+                    className="p-0"
+                )
+            ], className="shadow-lg border-light")
+        ], width=4), # Ocupa 1/3 del ancho (4 unidades)
+
+    ], className="mt-4")
+], className="p-4")
+
+# Contenidos para otras pestañas
+evolucion_content = html.Div(html.H4("Contenido de Evolución (Próximamente)", className="p-5 text-light"))
+
+
+# ----------------------------------------------------------------------
+# --- LAYOUT PRINCIPAL ---
+# ----------------------------------------------------------------------
+
+app_layout = dbc.Container([
+    
+    # Stores (Globales)
+    dcc.Store(id='map-memory', data='global_view'),
+    dcc.Store(id='filtered-data-store', data=data.to_dict('records')),
+    
+    # Fila 1: Título y Pestañas
+    dbc.Row(className="mb-2 mt-2 align-items-end", children=[
+        # Título a la izquierda
+        dbc.Col(html.Div("Comprendiendo el negocio de Uber en Nueva York", 
+                         className="display-6 fw-bold text-light"), width={"size": 6}),
+        
+        # Pestañas a la derecha
+        dbc.Col(
+            dbc.Tabs(
+                [
+                    dbc.Tab(label="Viajes", tab_id="tab-viajes", 
+                            tab_class_name="bg-dark text-secondary", active_tab_class_name="fw-bold text-light bg-primary"),
+                    dbc.Tab(label="Distritos", tab_id="tab-distritos", 
+                            tab_class_name="bg-dark text-secondary"),
+                    dbc.Tab(label="Pagos", tab_id="tab-pagos", 
+                            tab_class_name="bg-dark text-secondary"),
+                    dbc.Tab(label="Evolucion", tab_id="tab-evolucion", 
+                            tab_class_name="bg-dark text-secondary"),
+                ],
+                id="tabs",
+                active_tab="tab-viajes",
+                className="nav-pills"
+            ), 
+            width={"size": 6, "offset": 0},
+            className="d-flex justify-content-end"
+        )
+    ]),
+    
+    # Fila 2: Contenido de la pestaña activa (cargado por callback)
+    dbc.Row(dbc.Col(html.Div(id='content-div', className='p-0'), width=12)),
+    
+], fluid=True, className="bg-dark text-light p-4")

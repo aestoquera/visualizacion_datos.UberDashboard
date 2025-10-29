@@ -1,0 +1,77 @@
+/* /assets/styles.css (REHECHO PARA BARRAS 5x20) */
+
+/* ... (clases .waffle-bars-container y .waffle-column sin cambios) ... */
+.waffle-bars-container {
+    display: flex;
+    justify-content: space-around; 
+    padding: 10px;
+    align-items: flex-end; 
+}
+.waffle-column {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    margin: 0 10px; 
+}
+
+/* --- WAFFLE PLOT 5x20 (BARRA VERTICAL) --- */
+
+.waffle-bars-container {
+    display: flex;
+    justify-content: space-around; 
+    padding: 10px;
+    /* Mantenemos align-items: flex-end para que las bases de las barras (el waffle-column) 
+       sigan alineadas en la parte inferior del contenedor general. 
+       La inversión ocurre dentro de cada waffle-grid-bar. */
+    align-items: flex-end; 
+}
+.waffle-column {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    margin: 0 10px; 
+}
+
+/* --- WAFFLE PLOT 5x20 (BARRA VERTICAL INVERTIDA) --- */
+
+.waffle-grid-bar {
+    display: flex; 
+    flex-direction: row; 
+    flex-wrap: wrap;
+    
+    /* CORRECCIÓN CLAVE: Las filas se apilan desde ARRIBA */
+    align-content: flex-start;
+    
+    /* Dimensiones (5 ancho x 20 alto) - Sin cambios */
+    width: 112px; 
+    height: 442px; 
+    
+    gap: 2px;
+    border: 1px solid #444;
+    background-color: #333;
+    padding: 1px; 
+    box-sizing: content-box; 
+}
+
+/* Iconos de 20px * 20px - Sin cambios */
+.waffle-icon {
+    width: 20px; 
+    height: 20px; 
+    object-fit: contain; 
+}
+
+/* Bloques vacíos transparentes - Sin cambios */
+.waffle-icon-empty {
+    width: 20px; 
+    height: 20px; 
+    background-color: transparent; 
+}
+
+/* Etiqueta de texto debajo de la barra - Sin cambios */
+.waffle-label-bottom {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #CCC;
+    margin-top: 8px; 
+    width: 112px; 
+}
