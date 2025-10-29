@@ -1,0 +1,23 @@
+# Librerías principales de análisis y manipulación de datos
+pandas
+numpy
+
+# Librerías geoespaciales
+geopandas
+shapely
+
+# Librerías para dashboards interactivos
+dash
+dash-bootstrap-components
+dash-leaflet
+plotly
+
+# Librerías para descarga de datos desde Kaggle
+kagglehub
+
+# Utilidades y manejo del sistema
+requests
+tqdm
+
+# Para ejecutar procesos externos (ya viene en Python)
+subprocess-run
