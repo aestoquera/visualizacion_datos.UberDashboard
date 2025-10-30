@@ -4,6 +4,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import dash_leaflet as dl
+import pandas as pd
 
 # Importar variables pre-calculadas del módulo de datos
 from data import data, pickup_markers, center_lat, center_lon
@@ -13,8 +14,16 @@ from data import data, pickup_markers, center_lat, center_lon
 # ----------------------------------------------------------------------
 
 # El contenido del mapa y los gráficos para la pestaña "Viajes"
+min_dt = pd.to_datetime(data['tpep_pickup_datetime'].min())
+min_date_str = min_dt.strftime('%Y-%m-%d')
+default_start_time = min_dt.strftime('%H:%M')
+default_end_time = (min_dt + pd.Timedelta(hours=1)).strftime('%H:%M')
 
 viajes_content = html.Div([
+    dcc.Store(id='time-filtered-store', data=[]),
+    dcc.Store(id='filtered-data-store', data=[]),
+    dcc.Store(id='fixed-date-store', data=min_date_str),
+    dcc.Store(id='filter-applied-flag', data='pickups'),
     dbc.Row([
         # Columna Izquierda (Mapa - 2/3)
         dbc.Col([
@@ -39,27 +48,41 @@ viajes_content = html.Div([
                         # Columna para el Filtro de Fecha (Aproximadamente 8 unidades de ancho)
                         dbc.Col(
                             html.Div([
-                                # a. H6 (encima)
-                                html.H6(
-                                    "Filtro por Fecha de Recogida", 
-                                    className="text-secondary mb-0" # mb-0 para pegar al DatePicker
-                                ),
-                                # b. DatePickerRange (debajo)
-                                dcc.DatePickerRange(
-                                    id='date-range-picker',
-                                    min_date_allowed=data['tpep_pickup_datetime'].min(),
-                                    max_date_allowed=data['tpep_pickup_datetime'].max(),
-                                    start_date=data['tpep_pickup_datetime'].min(),
-                                    end_date=data['tpep_pickup_datetime'].max(),
-                                    className="mb-3",
-                                    # 2. FIX: Usamos zIndex para forzar el calendario a estar ENCIMA del mapa
-                                    style={'zIndex': 1000} 
-                                ),
+                                html.H6("Filtro por Hora de Recogida", className="text-secondary mb-0"),
+                                dbc.Row([
+                                    dbc.Col(
+                                        html.Div([
+                                            html.Label("Hora inicio", className="small"),
+                                            dbc.Input(                       
+                                                id='start-time-input',
+                                                type='time',
+                                                value=default_start_time,
+                                                className="form-control"
+                                            )
+                                        ]),
+                                        width=6
+                                    ),
+                                    dbc.Col(
+                                        html.Div([
+                                            html.Label("Hora fin", className="small"),
+                                            dbc.Input(                       
+                                                id='end-time-input',
+                                                type='time',
+                                                value=default_end_time,
+                                                className="form-control"
+                                            )
+                                        ]),
+                                        width=6
+                                    ),
+                                        # Store con la fecha fija (minima)
+                                        dcc.Store(id='fixed-date-store', data=min_date_str)
+                                    ], className="mt-2"),
+                                    #html.Div(html.Small(f"Fecha fija: {min_date_str}", className="text-muted"), className="mt-1")
                             ]),
                             width=8
                         ),
                     ], 
-                    className="g-1" # g-0 elimina el espaciado horizontal (gutter) entre columnas
+                    className="g-2" # g-0 elimina el espaciado horizontal (gutter) entre columnas
                 ),
             ]),
             
@@ -72,7 +95,7 @@ viajes_content = html.Div([
                         center=[center_lat, center_lon],
                         zoom=13,
                         style={'width': '100%', 'height': '600px'}, 
-                        children=[dl.TileLayer()] + pickup_markers
+                        children=[dl.TileLayer()] 
                     )
                 )
             ], className="shadow-lg border-light")
@@ -190,9 +213,7 @@ app_layout = dbc.Container([
     
     # Stores (Globales)
     dcc.Store(id='map-memory', data='global_view'),
-    dcc.Store(id='filtered-data-store', data=data.to_dict('records')),
-    dcc.Store(id='full-filtered-data-store', data=[]),
-    dcc.Store(id='limited-markers-store', data={}),
+    dcc.Store(id='filtered-data-store', data=[]),
     
     # Fila 1: Título y Pestañas
     dbc.Row(className="mb-2 mt-2 align-items-end", children=[

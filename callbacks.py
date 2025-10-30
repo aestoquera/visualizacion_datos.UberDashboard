@@ -1,13 +1,16 @@
 # callbacks.py
 # Contiene toda la lógica de callbacks de la aplicación.
 
-import pandas as pd
+from dash import Input, Output, State, callback_context, ALL, no_update
 import dash
-from dash import Input, Output, State, ALL, ctx, html
-import dash_leaflet as dl
+import pandas as pd
+import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
-import random
+import plotly.graph_objs as go
+import dash_leaflet as dl
+from dash.exceptions import PreventUpdate
+from dash import html, dcc
+import json
 
 # Importar variables de datos y layout
 from data import data, pickup_markers, dropoff_markers, green_icon, red_icon, ICON_MAP
@@ -15,9 +18,33 @@ from layout import viajes_content, distritos_content, pagos_content, evolucion_c
 
 DEFAULT_PAYMENT_TYPE = "Otros"
 
-def register_callbacks(app):
+# def create_markers(df, marker_type, icon):
+#     """
+#     Genera una lista de dl.Marker desde un DataFrame, usando el 
+#     índice del DataFrame como 'index' en el ID del marcador.
+#     """
+#     markers = []
+#     lat_col = 'pickup_latitude' if marker_type == 'pickup' else 'dropoff_latitude'
+#     lon_col = 'pickup_longitude' if marker_type == 'pickup' else 'dropoff_longitude'
+#     tooltip = "Salida" if marker_type == 'pickup' else "Llegada"
     
-    # CALLBACK para RENDERIZAR el contenido de la pestaña
+#     for idx, row in df.iterrows():
+#         marker = dl.Marker(
+#             position=(row[lat_col], row[lon_col]),
+#             icon=icon,
+#             children=[dl.Tooltip(tooltip)],
+#             # ID de coincidencia de patrones. El 'index' es el índice
+#             # original del DataFrame 'data', no la posición (iloc).
+#             id={'type': f'{marker_type}_marker', 'index': idx}
+#         )
+#         markers.append(marker)
+#     return markers
+# SAMPLE_LIMIT = 500
+
+
+def register_callbacks(app):
+
+    # --------------- RENDER DE PESTAÑAS ----------------
     @app.callback(
         Output('content-div', 'children'),
         Input('tabs', 'active_tab')
@@ -28,174 +55,312 @@ def register_callbacks(app):
         elif active_tab == "tab-distritos":
             return distritos_content
         elif active_tab == "tab-pagos":
-            # --- AÑADIDO ---
-            return pagos_content 
+            return pagos_content
         elif active_tab == "tab-evolucion":
             return evolucion_content
-        return html.Div(html.P("Selecciona una pestaña."))
-
-
-    # CALLBACK 1: Alternar vistas del mapa
+        return dash.html.Div(dash.html.P("Selecciona una pestaña."))
+    # --- CALLBACK: Toggle botón (ahora guarda 'pickups'/'dropoffs') ---
     @app.callback(
-        Output("map", "children"),
-        Output("toggle-view-btn", "children"),
-        Output("map", "center"),
-        Output("map", "zoom"),
-        Output("map-memory", "data"), 
-        Input("toggle-view-btn", "n_clicks"),
-        # **QUITAR: prevent_initial_call=True**
-        # AL NO USAR prevent_initial_call=True, SE EJECUTA AL INICIO (n_clicks=None)
+        Output('filter-applied-flag', 'data'),
+        Output('toggle-view-btn', 'children'),
+        Input('toggle-view-btn', 'n_clicks'),
+        State('filter-applied-flag', 'data'),
+        prevent_initial_call=False
     )
-    def toggle_view(n_clicks):
-        if data.empty:
-            raise dash.exceptions.PreventUpdate
+    def toggle_view(n_clicks, current_mode):
+        # Normalizamos el valor por defecto
+        if current_mode not in ('pickups', 'dropoffs'):
+            current_mode = 'pickups'
+        # Si no se ha hecho click aún, devolvemos el estado actual (inicio)
+        if n_clicks is None:
+            label = "Mostrando salidas" if current_mode == 'pickups' else "Mostrando llegadas"
+            return current_mode, label
+        # Toggle por cada click
+        new_mode = 'dropoffs' if current_mode == 'pickups' else 'pickups'
+        label = "Mostrando salidas" if new_mode == 'pickups' else "Mostrando llegadas"
+        return new_mode, label
 
-        # Si n_clicks es None (carga inicial), se interpreta como 0, lo que significa mostrar pickups.
-        # Si n_clicks existe, se alterna el módulo.
-        show_pickups = (n_clicks or 0) % 2 == 0
-        
-        if show_pickups:
-            visible_markers = pickup_markers
-            button_text = "Mostrando salidas"
+    # --- CALLBACK UNIFICADO: fechas, modo, clicks en marcadores y movimiento del mapa ---
+    @app.callback(
+        Output('map', 'children'),         # reconstruir marcadores (solo cuando toca)
+        Output('map', 'bounds'),           # ajustar bounds cuando se selecciona un viaje
+        Output('map', 'center'),           # ajustar center al seleccionar
+        Output('filtered-data-store', 'data'),  # almacenar SOLO los viajes visibles (para gráficos)
+        Output('map-info', 'children'),    # texto de info resumida
+        Input('start-time-input', 'value'),      
+        Input('end-time-input', 'value'),         
+        Input('fixed-date-store', 'data'),        # fecha fija (YYYY-MM-DD)
+        Input('filter-applied-flag', 'data'),     # 'pickups' o 'dropoffs'
+        Input('map', 'bounds'),                   # pan/zoom -> actualizar visibles
+        Input({'type': 'pickup-marker', 'index': ALL}, 'n_clicks'),
+        Input({'type': 'dropoff-marker', 'index': ALL}, 'n_clicks'),
+        prevent_initial_call=False
+    )
+    def map_master(start_time, end_time, fixed_date, mode, current_bounds, pickup_clicks, dropoff_clicks):
+        """
+        start_time, end_time : "HH:MM" (strings) desde los Inputs type=time
+        fixed_date : "YYYY-MM-DD" desde el store
+        mode : 'pickups' o 'dropoffs'
+        current_bounds : [[lat_min, lon_min], [lat_max, lon_max]] (o None)
+        """
+        ctx = callback_context
+
+        # Detectar qué disparó el callback de forma robusta
+        triggered = None
+        if ctx.triggered:
+            trig = ctx.triggered[0]  # primer trigger (normalmente el único)
+            prop_id = trig.get('prop_id', '')
+            # prop_id puede ser: 'start-time-input.value' o '{"type":"pickup-marker","index":123}.n_clicks'
+            comp_id = prop_id.split('.')[0] if prop_id else ''
+            # Si comp_id es JSON (pattern-matching), convertir a dict
+            try:
+                triggered = json.loads(comp_id) if comp_id.startswith('{') else comp_id
+            except Exception:
+                triggered = comp_id
         else:
-            visible_markers = dropoff_markers
-            button_text = "Mostrando llegadas"
-            
-        # Usar las coordenadas pre-calculadas para la vista global
-        # Esto es crucial para restablecer el mapa
-        lat_center = data['pickup_latitude'].median()
-        lon_center = data['pickup_longitude'].median()
-        default_center = [lat_center, lon_center]
-        default_zoom = 13
-        
-        # **Asegurar que siempre retorna la vista GLOBAL y el estado 'global_view'**
-        return [dl.TileLayer()] + visible_markers, button_text, default_center, default_zoom, 'global_view'
+            triggered = None
 
-    # CALLBACK 2: Enfocar en un viaje
-    @app.callback(
-        Output("map", "children", allow_duplicate=True),
-        Output("map", "center", allow_duplicate=True),
-        Output("map", "zoom", allow_duplicate=True),
-        Output("map-memory", "data", allow_duplicate=True), 
-        Input({"type": "pickup_marker", "index": ALL}, "n_clicks"),
-        Input({"type": "dropoff_marker", "index": ALL}, "n_clicks"),
-        State("map-memory", "data"), 
-        prevent_initial_call=True
-    )
-    def focus_on_trip(pickup_clicks, dropoff_clicks, current_map_state):
-        triggered = ctx.triggered_id
-        if not triggered or data.empty:
+        # --- Normalizaciones / validaciones ---
+        if not fixed_date:
+            # No tenemos fecha fija: no procesamos
             raise dash.exceptions.PreventUpdate
-        if current_map_state == 'global_view':
-            return dash.no_update, dash.no_update, dash.no_update, 'idle'
-        
-        idx = triggered["index"]
-        row = data.iloc[idx]
-        
-        popup_content = html.Div([
-            html.H5("🚖 Información del viaje", className="text-dark"),
-            html.P(f"👤 Pasajeros: {row['passenger_count']}"),
-            html.P(f"💰 Total: ${row['total_amount']:.2f}"),
-            html.P(f"⏱️ Duración: {row['trip_minutes']:.1f} min"),
-            html.P(f"🛣️ Distancia: {row['trip_distance_km']:.2f} km")
-        ], className="text-secondary")
 
-        pickup = dl.Marker(
-            position=(row['pickup_latitude'], row['pickup_longitude']),
-            icon=green_icon,
-            children=[dl.Tooltip("Salida"), dl.Popup(popup_content)],
-        )
-        dropoff = dl.Marker(
-            position=(row['dropoff_latitude'], row['dropoff_longitude']),
-            icon=red_icon,
-            children=[dl.Tooltip("Llegada"), dl.Popup(popup_content)],
-        )
-        lat_center = pd.Series([row['pickup_latitude'], row['dropoff_latitude']]).median()
-        lon_center = pd.Series([row['pickup_longitude'], row['dropoff_longitude']]).median()
-        new_children = [dl.TileLayer()] + [pickup, dropoff]
-        new_center = [lat_center, lon_center]
-        new_zoom = 13 
-        return new_children, new_center, new_zoom, 'isolated_view'
+        # Si faltan horas, pongo defaults basados en dataset
+        min_dt = pd.to_datetime(data['tpep_pickup_datetime'].min())
+        if start_time is None:
+            start_time = min_dt.strftime('%H:%M')
+        if end_time is None:
+            end_time = (min_dt + pd.Timedelta(hours=1)).strftime('%H:%M')
 
+        # Construir timestamps completos y asegurar end > start
+        try:
+            start_ts = pd.to_datetime(f"{fixed_date} {start_time}")
+            end_ts = pd.to_datetime(f"{fixed_date} {end_time}")
+        except Exception:
+            start_ts = min_dt
+            end_ts = min_dt + pd.Timedelta(hours=1)
 
-    # CALLBACK 3: FILTRAR DATOS POR ZOOM Y ACTUALIZAR INFORMACIÓN DE ÁREA
-    @app.callback(
-        Output('map-info', 'children'),
-        Output('filtered-data-store', 'data'),
-        Input('map', 'bounds'),
-        State('toggle-view-btn', 'children'),
-    )
-    def filter_data_by_bounds(bounds, current_view):
-        if data.empty:
-            info_text = html.Div([html.P("No hay datos cargados.", className="mb-0 small")])
-            return info_text, []
-            
-        df = data.copy() 
-        
-        if not bounds:
-            info_text = html.Div([
-                html.P(f"Viajes visibles: {len(df)} / {len(df)} (Global)", className="mb-0 small"),
+        if end_ts <= start_ts:
+            end_ts = start_ts + pd.Timedelta(hours=1)
+
+        # Filtrar por intervalo horario
+        df = data.copy()
+        # df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
+        filtered_df = df[(df['tpep_pickup_datetime'] >= start_ts) & (df['tpep_pickup_datetime'] <= end_ts)].reset_index(drop=False)
+        total_after_date = len(filtered_df)
+
+        # Si no hay datos en el intervalo
+        if total_after_date == 0:
+            info = html.Div([
+                html.P(f"Viajes tras hora: {total_after_date}", className="mb-0 small"),
+                html.P("No hay viajes en el intervalo horario seleccionado.", className="mb-0 small")
             ])
-            return info_text, df.to_dict('records')
+            return [dl.TileLayer()], no_update, no_update, [], info
 
-        lat_min, lon_min = bounds[0]
-        lat_max, lon_max = bounds[1]
-        
-        if "salidas" in current_view.lower():
-            lat_col = 'pickup_latitude'
-            lon_col = 'pickup_longitude'
-        else:
-            lat_col = 'dropoff_latitude'
-            lon_col = 'dropoff_longitude'
+        # Serializar viajes filtrados en una lista
+        store_all = []
+        for _, row in filtered_df.iterrows():
+            idx = int(row['index'])
+            store_all.append({
+                'index': idx,
+                'pickup_latitude': float(row['pickup_latitude']),
+                'pickup_longitude': float(row['pickup_longitude']),
+                'dropoff_latitude': float(row['dropoff_latitude']),
+                'dropoff_longitude': float(row['dropoff_longitude']),
+                'passenger_count': row.get('passenger_count', None),
+                'total_amount': float(row.get('total_amount', 0)) if pd.notna(row.get('total_amount', None)) else None,
+                'trip_minutes': float(row.get('trip_minutes', 0)) if pd.notna(row.get('trip_minutes', None)) else None,
+                'trip_distance_km': float(row.get('trip_distance_km', 0)) if pd.notna(row.get('trip_distance_km', None)) else None,
+                'tpep_pickup_datetime': str(row['tpep_pickup_datetime'])
+            })
 
-        filtered_data = df[
-            (df[lat_col] >= lat_min) & (df[lat_col] <= lat_max) &
-            (df[lon_col] >= lon_min) & (df[lon_col] <= lon_max)
-        ]
+        # Helper para comprobar si un punto está en bounds
+        def in_bounds(lat, lon, bounds):
+            if bounds is None:
+                return True
+            try:
+                (lat_min, lon_min), (lat_max, lon_max) = bounds[0], bounds[1]
+                return (lat >= min(lat_min, lat_max)) and (lat <= max(lat_min, lat_max)) and \
+                    (lon >= min(lon_min, lon_max)) and (lon <= max(lon_min, lon_max))
+            except Exception:
+                return True
+
+        # --- Caso 1: click en marcador (pattern-matching -> triggered es dict) ---
+        if isinstance(triggered, dict) and 'type' in triggered and 'index' in triggered:
+            clicked_index = int(triggered['index'])
+            sel = next((r for r in store_all if int(r['index']) == clicked_index), None)
+            if sel is None:
+                # click en marcador que no está en current interval -> no update
+                pass
+            else:
+                # Construir pickup + dropoff y ajustar bounds/center
+                idx = int(sel['index'])
+                pickup_marker = dl.Marker(
+                    id={'type': 'pickup-marker', 'index': idx},
+                    position=(float(sel['pickup_latitude']), float(sel['pickup_longitude'])),
+                    icon=green_icon if 'green_icon' in globals() else None,
+                    children=[
+                        dl.Tooltip("Salida"),
+                        dl.Popup(
+                            html.Div([
+                                html.H5("🚖 Información del viaje", className="text-dark"),
+                                html.P(f"👤 Pasajeros: {sel.get('passenger_count', 'N/A')}"),
+                                html.P(f"💰 Total: ${float(sel.get('total_amount', 0)):.2f}"),
+                                html.P(f"⏱️ Duración: {float(sel.get('trip_minutes', 0)):.1f} min"),
+                                html.P(f"🛣️ Distancia: {float(sel.get('trip_distance_km', 0)):.2f} km"),
+                            ], className="text-secondary", style={'color': 'black'})
+                        )
+                    ]
+                )
+                dropoff_marker = dl.Marker(
+                    id={'type': 'dropoff-marker', 'index': idx},
+                    position=(float(sel['dropoff_latitude']), float(sel['dropoff_longitude'])),
+                    icon=red_icon if 'red_icon' in globals() else None,
+                    children=[dl.Tooltip("Llegada")]
+                )
+                children = [dl.TileLayer(), pickup_marker, dropoff_marker]
+            
+
+                lat1, lon1 = float(sel['pickup_latitude']), float(sel['pickup_longitude'])
+                lat2, lon2 = float(sel['dropoff_latitude']), float(sel['dropoff_longitude'])
+                lat_min, lat_max = min(lat1, lat2), max(lat1, lat2)
+                lon_min, lon_max = min(lon1, lon2), max(lon1, lon2)
+                lat_pad = (lat_max - lat_min) * 0.2 if (lat_max - lat_min) != 0 else 0.001
+                lon_pad = (lon_max - lon_min) * 0.2 if (lon_max - lon_min) != 0 else 0.001
+                bounds = [[lat_min - lat_pad, lon_min - lon_pad], [lat_max + lat_pad, lon_max + lon_pad]]
+                center = [(lat_min + lat_max) / 2, (lon_min + lon_max) / 2]
+
+                new_filtered = [sel]
+                info = html.Div([
+                    html.P(f"Viajes tras hora: 1", className="mb-0 small"),
+                    html.P(f"Viajes visibles (por bounds): 1", className="mb-0 small"),
+                    html.P(f"Lat range: {lat_min:.4f} — {lat_max:.4f}", className="mb-0 small"),
+                    html.P(f"Lon range: {lon_min:.4f} — {lon_max:.4f}", className="mb-0 small"),
+                ])
+
+                return children, bounds, center, new_filtered, info
+
+        # --- Caso 2: movimiento del mapa (prop_id = 'map.bounds') ---
+        if triggered == 'map' or (isinstance(triggered, str) and triggered == 'map'):
+            visible = []
+            for r in store_all:
+                lat = r['pickup_latitude'] if mode != 'dropoffs' else r['dropoff_latitude']
+                lon = r['pickup_longitude'] if mode != 'dropoffs' else r['dropoff_longitude']
+                if in_bounds(lat, lon, current_bounds):
+                    visible.append(r)
+            if len(visible) == 0:
+                info = html.Div([
+                    html.P(f"Viajes tras hora: {total_after_date}", className="mb-0 small"),
+                    html.P("No hay viajes visibles en el área actual.", className="mb-0 small")
+                ])
+                return no_update, no_update, no_update, [], info
+
+            lat_min = min([ (v['pickup_latitude'] if mode != 'dropoffs' else v['dropoff_latitude']) for v in visible ])
+            lat_max = max([ (v['pickup_latitude'] if mode != 'dropoffs' else v['dropoff_latitude']) for v in visible ])
+            lon_min = min([ (v['pickup_longitude'] if mode != 'dropoffs' else v['dropoff_longitude']) for v in visible ])
+            lon_max = max([ (v['pickup_longitude'] if mode != 'dropoffs' else v['dropoff_longitude']) for v in visible ])
+
+            info = html.Div([
+                html.P(f"Viajes tras hora: {total_after_date}", className="mb-0 small"),
+                html.P(f"Viajes visibles (por bounds): {len(visible)}", className="mb-0 small"),
+                html.P(f"Lat range: {lat_min:.4f} — {lat_max:.4f}", className="mb-0 small"),
+                html.P(f"Lon range: {lon_min:.4f} — {lon_max:.4f}", className="mb-0 small"),
+            ])
+            return no_update, no_update, no_update, visible, info
+
+        # --- Flujo por cambio de horas o cambio de modo (pickups/dropoffs): reconstruir marcadores ---
+        limited_points = store_all[:300]
         
-        num_trips = len(filtered_data)
+        children = [dl.TileLayer()]
         
-        info_text = html.Div([
-            html.P(f"Viajes visibles: {num_trips} / {len(df)}", className="mb-0 small"),
-            html.P(f"Sup. Izda: Lat {lat_max:.4f}, Lon {lon_min:.4f}", className="mb-0 small"),
-            html.P(f"Inf. Dcha: Lat {lat_min:.4f}, Lon {lon_max:.4f}", className="mb-0 small"),
+        for r in limited_points:
+            idx = int(r['index'])
+            if mode == 'dropoffs':
+                marker = dl.Marker(
+                    id={'type': 'dropoff-marker', 'index': idx},
+                    position=(float(r['dropoff_latitude']), float(r['dropoff_longitude'])),
+                    icon=red_icon if 'red_icon' in globals() else None,
+                    children=[dl.Tooltip("Llegada")]
+                )
+            else:
+                marker = dl.Marker(
+                    id={'type': 'pickup-marker', 'index': idx},
+                    position=(float(r['pickup_latitude']), float(r['pickup_longitude'])),
+                    icon=green_icon if 'green_icon' in globals() else None,
+                    children=[
+                        dl.Tooltip("Salida"),
+                        dl.Popup(
+                            html.Div([
+                                html.H5("🚖 Información del viaje", className="text-dark"),
+                                html.P(f"👤 Pasajeros: {r.get('passenger_count', 'N/A')}"),
+                                html.P(f"💰 Total: ${float(r.get('total_amount', 0)):.2f}"),
+                                html.P(f"⏱️ Duración: {float(r.get('trip_minutes', 0)):.1f} min"),
+                                html.P(f"🛣️ Distancia: {float(r.get('trip_distance_km', 0)):.2f} km"),
+                            ], className="text-secondary", style={'color': 'black'})
+                        )
+                    ]
+                )
+            children.append(marker)
+
+        # Guardar solo los puntos visibles según current_bounds (si existe)
+        visible = []
+        for r in store_all:
+            lat = r['pickup_latitude'] if mode != 'dropoffs' else r['dropoff_latitude']
+            lon = r['pickup_longitude'] if mode != 'dropoffs' else r['dropoff_longitude']
+            if in_bounds(lat, lon, current_bounds):
+                visible.append(r)
+
+        saved = visible if current_bounds is not None else store_all
+
+        lat_min = min([ (v['pickup_latitude'] if mode != 'dropoffs' else v['dropoff_latitude']) for v in saved ]) if saved else 0
+        lat_max = max([ (v['pickup_latitude'] if mode != 'dropoffs' else v['dropoff_latitude']) for v in saved ]) if saved else 0
+        lon_min = min([ (v['pickup_longitude'] if mode != 'dropoffs' else v['dropoff_longitude']) for v in saved ]) if saved else 0
+        lon_max = max([ (v['pickup_longitude'] if mode != 'dropoffs' else v['dropoff_longitude']) for v in saved ]) if saved else 0
+
+        info = html.Div([
+            html.P(f"Viajes tras hora: {total_after_date}", className="mb-0 small"),
+            html.P(f"Viajes visibles (por bounds): {len(saved)}", className="mb-0 small"),
+            html.P(f"Lat range: {lat_min:.4f} — {lat_max:.4f}", className="mb-0 small"),
+            html.P(f"Lon range: {lon_min:.4f} — {lon_max:.4f}", className="mb-0 small"),
         ])
-        
-        return info_text, filtered_data.to_dict('records')
 
-    # CALLBACK 4: GENERAR GRÁFICOS USANDO LOS DATOS FILTRADOS
+        return children, no_update, no_update, saved, info
+    # ---------------------------------------------------------------------
+    # 4) CALLBACK: GRAFICOS -> ya lo proporcionaste; lo integro aquí con el mismo ID
+    #    - Input: analysis-dropdown, filtered-data-store
+    #    - Output: analysis-graph.figure
+    # ---------------------------------------------------------------------
     @app.callback(
         Output('analysis-graph', 'figure'),
         Input('analysis-dropdown', 'value'),
         Input('filtered-data-store', 'data')
     )
     def update_analysis_graph(selected_value, filtered_data_dict):
-        
         plotly_style = {
             'template': 'plotly_dark',
             'margin': dict(t=50, l=25, r=25, b=25)
         }
-        
+
         if not filtered_data_dict or len(filtered_data_dict) == 0:
             fig = go.Figure()
             fig.add_annotation(text="No hay datos visibles en el área del mapa.",
-                                xref="paper", yref="paper",
-                                x=0.5, y=0.5, showarrow=False,
-                                font=dict(size=16, color="#AAAAAA"))
+                               xref="paper", yref="paper",
+                               x=0.5, y=0.5, showarrow=False,
+                               font=dict(size=16, color="#AAAAAA"))
             fig.update_layout(title="Ajuste el Zoom", **plotly_style)
             return fig
-        
+
         filtered_data = pd.DataFrame(filtered_data_dict)
         num_trips = len(filtered_data)
-        
-        # 1. Gráfico de Pasajeros (Treemap)
+
+        # Treemap - pasajeros
         if selected_value == 'passengers':
             passenger_counts = filtered_data['passenger_count'].value_counts().reset_index()
             passenger_counts.columns = ['passenger_count', 'frequency']
             passenger_counts['passenger_count_str'] = passenger_counts['passenger_count'].astype(str) + ' Pasajeros'
-            
-            fig = px.treemap(passenger_counts, 
-                             path=[px.Constant(f"{num_trips} Viajes"), 'passenger_count_str'], 
+
+            fig = px.treemap(passenger_counts,
+                             path=[px.Constant(f"{num_trips} Viajes"), 'passenger_count_str'],
                              values='frequency',
                              title=f'Frecuencia por Nº de Pasajeros ({num_trips} viajes)',
                              color='frequency',
@@ -203,10 +368,10 @@ def register_callbacks(app):
             fig.update_layout(**plotly_style)
             return fig
 
-        # 2. Distribución de Tiempo (Violin Plot)
+        # Violin - tiempo
         elif selected_value == 'trip_time':
-            fig = px.violin(filtered_data, 
-                            y="trip_minutes", 
+            fig = px.violin(filtered_data,
+                            y="trip_minutes",
                             box=True,
                             points="all",
                             title=f'Distribución del Tiempo de Viaje ({num_trips} viajes)',
@@ -214,18 +379,21 @@ def register_callbacks(app):
             fig.update_layout(yaxis_title="Minutos de Viaje", **plotly_style)
             return fig
 
-        # 3. Distribución de Distancia (Violin Plot)
+        # Violin - distancia
         elif selected_value == 'trip_distance':
-            fig = px.violin(filtered_data, 
-                            y="trip_distance_km", 
-                            box=True, 
+            fig = px.violin(filtered_data,
+                            y="trip_distance_km",
+                            box=True,
                             points="all",
                             title=f'Distribución de la Distancia de Viaje ({num_trips} viajes)',
                             color_discrete_sequence=['#ffc107'])
             fig.update_layout(yaxis_title="Distancia (km)", **plotly_style)
             return fig
 
-        return go.Figure(**plotly_style)
+        # Default vacío
+        fig = go.Figure()
+        fig.update_layout(**plotly_style)
+        return fig
 
     # ----------------------------------------------------------------------
     # --- CALLBACK 5: ACTUALIZAR GRÁFICO DE DISTRITOS ---

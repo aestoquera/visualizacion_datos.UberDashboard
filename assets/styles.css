@@ -75,3 +75,22 @@
     margin-top: 8px; 
     width: 112px; 
 }
+/* 🔳 Forzar texto negro en todos los popups de Dash Leaflet */
+.leaflet-popup-content,
+.leaflet-popup-content * {
+  color: #000 !important;      /* fuerza color negro */
+  text-shadow: none !important; /* elimina efectos que aclaren o modifiquen el color */
+}
+
+/* Opcional: mejora la legibilidad del popup */
+.leaflet-popup-content {
+  font-size: 14px;
+  line-height: 1.4;
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+/* Opcional:  título en negro */
+.leaflet-popup-content h5 {
+  color: #000 !important;
+  font-weight: 600;
+}
