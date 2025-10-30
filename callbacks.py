@@ -14,7 +14,7 @@ import json
 
 # Importar variables de datos y layout
 from data import data, pickup_markers, dropoff_markers, green_icon, red_icon, ICON_MAP
-from layout import viajes_content, distritos_content, pagos_content, evolucion_content
+from layout import viajes_content, distritos_content, pagos_content, evolucion_content, emisiones_de_carbono_content
 
 DEFAULT_PAYMENT_TYPE = "Otros"
 
@@ -58,6 +58,8 @@ def register_callbacks(app):
             return pagos_content
         elif active_tab == "tab-evolucion":
             return evolucion_content
+        elif active_tab == "tab-emisiones-co2":
+            return emisiones_de_carbono_content
         return dash.html.Div(dash.html.P("Selecciona una pestaña."))
     # --- CALLBACK: Toggle botón (ahora guarda 'pickups'/'dropoffs') ---
     @app.callback(
@@ -828,3 +830,174 @@ def register_callbacks(app):
             waffle_bars_container.children.append(waffle_bar)
 
         return html.Div([legend_div, waffle_bars_container])
+    @app.callback(
+        Output('co2-hourly-graph', 'figure'),
+        Output('co2-map-graph', 'figure'),
+        Output('co2-treemap-graph', 'figure'),  
+        Input('hour-range-slider', 'value'),
+        Input('borough-dropdown', 'value'),
+        Input('metric-radio', 'value')
+    )
+    def update_co2_visualizations(hour_range, boroughs_selected, metric_col):
+        """
+        Devuelve tres figuras:
+         - co2_hourly_fig: agregación por hora
+         - co2_map_fig: scatter mapbox de pickups
+         - co2_treemap_fig: treemap por pickup_borough -> payment_type (suma CO2)
+        """
+        plotly_style = {
+            'template': 'plotly_dark',
+            'margin': dict(t=40, l=20, r=20, b=20)
+        }
+        filtered_data_dict = data
+        # Si no hay datos
+        if len(filtered_data_dict) == 0:
+            # Figura vacía con anotación
+            def empty_fig(message="No hay datos para mostrar."):
+                f = go.Figure()
+                f.add_annotation(text=message, xref="paper", yref="paper", x=0.5, y=0.5,
+                                 showarrow=False, font=dict(size=14, color="#AAAAAA"))
+                f.update_layout(**plotly_style)
+                return f
+            return empty_fig("No hay datos visibles para las vistas de CO₂."), empty_fig("No hay datos visibles para el mapa."), empty_fig("No hay datos visibles para el treemap.")
+
+        # Construimos DataFrame
+        df = pd.DataFrame(filtered_data_dict)
+
+        # Parsear datetime si es string
+        if not pd.api.types.is_datetime64_any_dtype(df.get('tpep_pickup_datetime')):
+            try:
+                df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
+            except Exception:
+                # si falla, devolver vacíos
+                return (go.Figure().update_layout(**plotly_style),
+                        go.Figure().update_layout(**plotly_style),
+                        go.Figure().update_layout(**plotly_style))
+
+        # Añadir columna hora de pickup (0-23)
+        df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
+
+        # Aplicar filtro horario
+        h0, h1 = int(hour_range[0]), int(hour_range[1])
+        df = df[(df['pickup_hour'] >= h0) & (df['pickup_hour'] <= h1)]
+
+        # Filtro por borough (si es multi y contiene "ALL" lo ignoramos)
+        if boroughs_selected and not (len(boroughs_selected) == 1 and boroughs_selected[0] == "ALL"):
+            # Asumimos que las columnas son 'pickup_borough' en el dataset
+            df = df[df['pickup_borough'].isin(boroughs_selected)]
+
+        # Si después del filtrado quedó vacío
+        if df.empty:
+            def empty_fig(message="No hay datos después del filtrado."):
+                f = go.Figure()
+                f.add_annotation(text=message, xref="paper", yref="paper", x=0.5, y=0.5,
+                                 showarrow=False, font=dict(size=14, color="#AAAAAA"))
+                f.update_layout(**plotly_style)
+                return f
+            return empty_fig("No hay viajes en ese rango horario/borough."), empty_fig("No hay viajes en ese rango horario/borough."), empty_fig("No hay viajes en ese rango horario/borough.")
+
+        # --- 1) HOURLY BAR: agregar por hora usando la métrica seleccionada ---
+        # metric_col es uno de: 'co2_kg_trip', 'co2_kg_per_km', 'co2_kg_per_passenger'
+        if metric_col not in df.columns:
+            # intentar mapear nombres si vienen con variaciones
+            metric_col = 'co2_kg_trip' if 'co2_kg_trip' in df.columns else df.columns[0]
+
+        hourly = df.groupby('pickup_hour')[metric_col].agg(['sum','mean','count']).reset_index()
+        hourly = hourly.sort_values('pickup_hour')
+
+        title_map = {
+            'co2_kg_trip': 'CO₂ total por hora (kg)',
+            'co2_kg_per_km': 'CO₂ medio por km por hora (kg/km)',
+            'co2_kg_per_passenger': 'CO₂ medio por pasajero por hora (kg/pax)'
+        }
+        # Para 'sum' vamos a mostrar suma, para per_km/per_passenger muestra media
+        if metric_col == 'co2_kg_trip':
+            y_vals = 'sum'
+            y_label = 'CO₂ total (kg)'
+        else:
+            y_vals = 'mean'
+            y_label = title_map.get(metric_col, metric_col)
+
+        co2_hourly_fig = px.bar(
+            hourly,
+            x='pickup_hour',
+            y=y_vals,
+            labels={'pickup_hour': 'Hora (0-23)', y_vals: y_label},
+            title=f"{title_map.get(metric_col, metric_col)} ({hourly['count'].sum()} viajes en el filtro)",
+            hover_data={'pickup_hour': True, y_vals: True, 'count': True}
+        )
+        co2_hourly_fig.update_layout(xaxis=dict(tickmode='linear'), **plotly_style)
+
+        # --- 2) MAP: scatter_mapbox ---
+        # Comprobamos coordenadas válidas
+        if ('pickup_latitude' in df.columns and 'pickup_longitude' in df.columns
+            and df['pickup_latitude'].notna().any() and df['pickup_longitude'].notna().any()):
+            # Centrar mapa en la mediana
+            center = {'lat': df['pickup_latitude'].median(), 'lon': df['pickup_longitude'].median()}
+            # Tamaño relativo: normalizamos co2_kg_trip para tamaño (si existe)
+            size_col = 'co2_kg_trip' if 'co2_kg_trip' in df.columns else metric_col
+            # Evitamos tamaños 0: asignamos una columna auxiliar
+            size_series = df[size_col].copy()
+            size_series = size_series.fillna(0)
+            # Escala simple para tamaño visual
+            size_norm = (size_series - size_series.min())
+            if size_norm.max() > 0:
+                size_norm = 5 + 20 * (size_norm / size_norm.max())  # entre 5 y 25
+            else:
+                size_norm = 6
+
+            co2_map_fig = px.scatter_mapbox(
+                df,
+                lat='pickup_latitude',
+                lon='pickup_longitude',
+                color=metric_col,
+                size=size_norm,
+                hover_data=['tpep_pickup_datetime', 'trip_distance_km', 'passenger_count', 'co2_kg_trip', 'co2_kg_per_km', 'co2_kg_per_passenger', 'pickup_borough', 'dropoff_borough'],
+                title="Mapa de pickups — coloreado por métrica CO₂",
+                zoom=11,
+                center=center
+            )
+            co2_map_fig.update_layout(mapbox_style='open-street-map', **plotly_style)
+        else:
+            co2_map_fig = go.Figure()
+            co2_map_fig.add_annotation(text="No hay coordenadas de pickup disponibles.", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(size=14, color="#AAAAAA"))
+            co2_map_fig.update_layout(**plotly_style)
+
+        # --- 3) TREEMAP: contribución por pickup_borough -> payment_type ---
+        # Aseguramos columnas
+        if 'pickup_borough' not in df.columns:
+            df['pickup_borough'] = 'Unknown'
+        treemap_df = df.groupby(['pickup_borough'])[ 'co2_kg_trip' if 'co2_kg_trip' in df.columns else metric_col ].sum().reset_index()
+        treemap_df.columns = ['pickup_borough', 'co2_kg_sum']
+
+        co2_treemap_fig = px.treemap(
+            treemap_df,
+            path=['pickup_borough'],
+            values='co2_kg_sum',
+            title='Contribución de CO₂ por Borough(kg total)',
+            hover_data={'co2_kg_sum': True}
+        )
+        co2_treemap_fig.update_layout(**plotly_style)
+
+        return co2_hourly_fig, co2_map_fig, co2_treemap_fig
+
+    # -----------------------------------------------------------------
+    # (Opcional) Callback para rellenar borough-dropdown con opciones detectadas
+    # Esto permite que el dropdown muestre dinamicamente los boroughs existentes
+    # Si prefieres mantener las opciones estáticas, puedes omitir este callback.
+    # -----------------------------------------------------------------
+    @app.callback(
+        Output('borough-dropdown', 'options'),
+        Output('borough-dropdown', 'value'),
+        Input('tabs', 'active_tab')
+    )
+    def populate_boroughs(active_tab):
+        if len(data) == 0:
+            return [{"label": "Todos", "value": "ALL"}], ["ALL"]
+        df = pd.DataFrame(data)
+        if 'pickup_borough' not in df.columns:
+            return [{"label": "Unknown", "value": "Unknown"}], ["Unknown"]
+        boroughs = sorted(df['pickup_borough'].dropna().unique().tolist())
+        options = [{"label": "Todos", "value": "ALL"}] + [{"label": b, "value": b} for b in boroughs]
+        # por defecto seleccionar "ALL"
+        return options, ["ALL"]

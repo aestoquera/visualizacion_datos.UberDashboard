@@ -203,8 +203,87 @@ pagos_content = html.Div([
 
 # Contenidos para otras pestañas
 evolucion_content = html.Div(html.H4("Contenido de Evolución (Próximamente)", className="p-5 text-light"))
+# ----------------------------------------------------------------------
+# --- LAYOUT EMISIONES CARBONO ---
+# ----------------------------------------------------------------------
+emisiones_de_carbono_content = html.Div([
+    dbc.Row([
+        # CONTROLES (columna derecha más pequeña)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Filtros y Métricas", className="fw-bold bg-dark text-light"),
+                dbc.CardBody([
+                    html.Div([
+                        html.Label("Borough (Pickup)"),
+                        dcc.Dropdown(
+                            id='borough-dropdown',
+                            options=[{"label": "Todos", "value": "ALL"}], 
+                            value=["ALL"],
+                            multi=True,
+                            placeholder="Selecciona borough(s)..."
+                        ),
+                        html.Br(),
+                        html.Label("Rango de horas (pickup)"),
+                        dcc.RangeSlider(
+                            id='hour-range-slider',
+                            min=0, max=23, step=1,
+                            value=[0, 23],
+                            marks={i: str(i) for i in range(0,24,3)},
+                            tooltip={"placement": "bottom", "always_visible": False}
+                        ),
+                        html.Br(),
+                        html.Label("Métrica de CO₂"),
+                        dcc.RadioItems(
+                            id='metric-radio',
+                            options=[
+                                {'label': 'CO₂ total por viaje', 'value': 'co2_kg_trip'},
+                                {'label': 'CO₂ por km (kg/km)', 'value': 'co2_kg_per_km'},
+                                {'label': 'CO₂ por pasajero (kg/pax)', 'value': 'co2_kg_per_passenger'}
+                            ],
+                            value='co2_kg_trip',
+                            inline=False
+                        ),
+                        html.Hr(),
+                    ])
+                ], className="p-2")
+            ], className="shadow-sm border-light"),
+            html.Br(),
+            dbc.Card([
+                dbc.CardHeader("Indicadores rápidos", className="fw-bold bg-dark text-light"),
+                dbc.CardBody([
+                    html.Div(id='co2-summary-cards') 
+                ])
+            ], className="shadow-sm border-light")
+        ], width=4),
 
+        # GRÁFICOS (columna izquierda mayor)
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Emisiones horarias (Total / km / pax)", className="fw-bold bg-dark text-light"),
+                dbc.CardBody(
+                    dcc.Graph(id='co2-hourly-graph', style={'height': '320px'}),
+                    className="p-2"
+                )
+            ], className="shadow-lg border-light mb-3"),
 
+            dbc.Card([
+                    dbc.CardHeader("Contribución de CO₂ (Treemap)", className="fw-bold bg-dark text-light"),
+                    dbc.CardBody(
+                        dcc.Graph(id='co2-treemap-graph', style={'height': '500px'}),
+                        className="p-2"
+                    )
+                ], className="shadow-lg border-light mb-3"),
+
+            dbc.Card([
+                dbc.CardHeader("Mapa de pickups (CO₂ por viaje)", className="fw-bold bg-dark text-light"),
+                dbc.CardBody(
+                    dcc.Graph(id='co2-map-graph', style={'height': '520px'}),
+                    className="p-2"
+                )
+            ], className="shadow-lg border-light mb-3")
+        ], width=8)
+    ], className="mt-4")
+], className="p-4")
 # ----------------------------------------------------------------------
 # --- LAYOUT PRINCIPAL ---
 # ----------------------------------------------------------------------
@@ -233,6 +312,8 @@ app_layout = dbc.Container([
                             tab_class_name="bg-dark text-secondary"),
                     dbc.Tab(label="Evolucion", tab_id="tab-evolucion", 
                             tab_class_name="bg-dark text-secondary"),
+                    dbc.Tab(label="Emisiones de CO2", tab_id="tab-emisiones-co2",
+                            tab_class_name="bg-dark text-secondary")
                 ],
                 id="tabs",
                 active_tab="tab-viajes",
