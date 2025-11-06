@@ -1160,7 +1160,7 @@ def register_callbacks(app):
 
     @app.callback(
         Output("co2-hourly-graph", "figure"),
-        Output("co2-map-graph", "figure"),
+        #Output("co2-map-graph", "figure"),
         Output("co2-treemap-graph", "figure"),
         Input("hour-range-slider", "value"),
         Input("borough-dropdown", "value"),
@@ -1170,7 +1170,6 @@ def register_callbacks(app):
         """
         Devuelve tres figuras:
          - co2_hourly_fig: agregación por hora
-         - co2_map_fig: scatter mapbox de pickups
          - co2_treemap_fig: treemap por pickup_borough -> payment_type (suma CO2)
         """
         plotly_style = {
@@ -1291,62 +1290,62 @@ def register_callbacks(app):
 
         # --- 2) MAP: scatter_mapbox ---
         # Comprobamos coordenadas válidas
-        if (
-            "pickup_latitude" in df.columns
-            and "pickup_longitude" in df.columns
-            and df["pickup_latitude"].notna().any()
-            and df["pickup_longitude"].notna().any()
-        ):
-            # Centrar mapa en la mediana
-            center = {
-                "lat": df["pickup_latitude"].median(),
-                "lon": df["pickup_longitude"].median(),
-            }
-            # Tamaño relativo: normalizamos co2_kg_trip para tamaño (si existe)
-            size_col = "co2_kg_trip" if "co2_kg_trip" in df.columns else metric_col
-            # Evitamos tamaños 0: asignamos una columna auxiliar
-            size_series = df[size_col].copy()
-            size_series = size_series.fillna(0)
-            # Escala simple para tamaño visual
-            size_norm = size_series - size_series.min()
-            if size_norm.max() > 0:
-                size_norm = 5 + 20 * (size_norm / size_norm.max())  # entre 5 y 25
-            else:
-                size_norm = 6
+        # if (
+        #     "pickup_latitude" in df.columns
+        #     and "pickup_longitude" in df.columns
+        #     and df["pickup_latitude"].notna().any()
+        #     and df["pickup_longitude"].notna().any()
+        # ):
+        #     # Centrar mapa en la mediana
+        #     center = {
+        #         "lat": df["pickup_latitude"].median(),
+        #         "lon": df["pickup_longitude"].median(),
+        #     }
+        #     # Tamaño relativo: normalizamos co2_kg_trip para tamaño (si existe)
+        #     size_col = "co2_kg_trip" if "co2_kg_trip" in df.columns else metric_col
+        #     # Evitamos tamaños 0: asignamos una columna auxiliar
+        #     size_series = df[size_col].copy()
+        #     size_series = size_series.fillna(0)
+        #     # Escala simple para tamaño visual
+        #     size_norm = size_series - size_series.min()
+        #     if size_norm.max() > 0:
+        #         size_norm = 5 + 20 * (size_norm / size_norm.max())  # entre 5 y 25
+        #     else:
+        #         size_norm = 6
 
-            co2_map_fig = px.scatter_mapbox(
-                df,
-                lat="pickup_latitude",
-                lon="pickup_longitude",
-                color=metric_col,
-                size=size_norm,
-                hover_data=[
-                    "tpep_pickup_datetime",
-                    "trip_distance_km",
-                    "passenger_count",
-                    "co2_kg_trip",
-                    "co2_kg_per_km",
-                    "co2_kg_per_passenger",
-                    "pickup_borough",
-                    "dropoff_borough",
-                ],
-                title="Mapa de pickups — coloreado por métrica CO₂",
-                zoom=11,
-                center=center,
-            )
-            co2_map_fig.update_layout(mapbox_style="open-street-map", **plotly_style)
-        else:
-            co2_map_fig = go.Figure()
-            co2_map_fig.add_annotation(
-                text="No hay coordenadas de pickup disponibles.",
-                xref="paper",
-                yref="paper",
-                x=0.5,
-                y=0.5,
-                showarrow=False,
-                font=dict(size=14, color="#AAAAAA"),
-            )
-            co2_map_fig.update_layout(**plotly_style)
+        #     co2_map_fig = px.scatter_mapbox(
+        #         df,
+        #         lat="pickup_latitude",
+        #         lon="pickup_longitude",
+        #         color=metric_col,
+        #         size=size_norm,
+        #         hover_data=[
+        #             "tpep_pickup_datetime",
+        #             "trip_distance_km",
+        #             "passenger_count",
+        #             "co2_kg_trip",
+        #             "co2_kg_per_km",
+        #             "co2_kg_per_passenger",
+        #             "pickup_borough",
+        #             "dropoff_borough",
+        #         ],
+        #         title="Mapa de pickups — coloreado por métrica CO₂",
+        #         zoom=11,
+        #         center=center,
+        #     )
+        #     co2_map_fig.update_layout(mapbox_style="open-street-map", **plotly_style)
+        # else:
+        #     co2_map_fig = go.Figure()
+        #     co2_map_fig.add_annotation(
+        #         text="No hay coordenadas de pickup disponibles.",
+        #         xref="paper",
+        #         yref="paper",
+        #         x=0.5,
+        #         y=0.5,
+        #         showarrow=False,
+        #         font=dict(size=14, color="#AAAAAA"),
+        #     )
+        #     co2_map_fig.update_layout(**plotly_style)
 
         # --- 3) TREEMAP: contribución por pickup_borough -> payment_type ---
         # Aseguramos columnas
@@ -1370,10 +1369,10 @@ def register_callbacks(app):
         )
         co2_treemap_fig.update_layout(**plotly_style)
 
-        return co2_hourly_fig, co2_map_fig, co2_treemap_fig
+        return co2_hourly_fig, co2_treemap_fig
 
     # -----------------------------------------------------------------
-    # (Opcional) Callback para rellenar borough-dropdown con opciones detectadas
+    # Callback para rellenar borough-dropdown con opciones detectadas
     # Esto permite que el dropdown muestre dinamicamente los boroughs existentes
     # Si prefieres mantener las opciones estáticas, puedes omitir este callback.
     # -----------------------------------------------------------------

@@ -410,17 +410,6 @@ emisiones_de_carbono_content = html.Div(
                             ],
                             className="shadow-sm border-light",
                         ),
-                        html.Br(),
-                        dbc.Card(
-                            [
-                                dbc.CardHeader(
-                                    "Indicadores rápidos",
-                                    className="fw-bold bg-dark text-light",
-                                ),
-                                dbc.CardBody([html.Div(id="co2-summary-cards")]),
-                            ],
-                            className="shadow-sm border-light",
-                        ),
                     ],
                     width=4,
                 ),
@@ -458,21 +447,21 @@ emisiones_de_carbono_content = html.Div(
                             ],
                             className="shadow-lg border-light mb-3",
                         ),
-                        dbc.Card(
-                            [
-                                dbc.CardHeader(
-                                    "Mapa de pickups (CO₂ por viaje)",
-                                    className="fw-bold bg-dark text-light",
-                                ),
-                                dbc.CardBody(
-                                    dcc.Graph(
-                                        id="co2-map-graph", style={"height": "520px"}
-                                    ),
-                                    className="p-2",
-                                ),
-                            ],
-                            className="shadow-lg border-light mb-3",
-                        ),
+                        # dbc.Card(
+                        #     [
+                        #         dbc.CardHeader(
+                        #             "Mapa de pickups (CO₂ por viaje)",
+                        #             className="fw-bold bg-dark text-light",
+                        #         ),
+                        #         dbc.CardBody(
+                        #             dcc.Graph(
+                        #                 id="co2-map-graph", style={"height": "520px"}
+                        #             ),
+                        #             className="p-2",
+                        #         ),
+                        #     ],
+                        #     className="shadow-lg border-light mb-3",
+                        # ),
                     ],
                     width=8,
                 ),
