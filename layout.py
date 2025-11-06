@@ -146,23 +146,13 @@ viajes_content = html.Div(
                                         dcc.Dropdown(
                                             id="analysis-dropdown",
                                             options=[
-                                                {
-                                                    "label": "Número de pasajeros",
-                                                    "value": "passengers",
-                                                },
-                                                {
-                                                    "label": "Distribución del tiempo de viaje",
-                                                    "value": "trip_time",
-                                                },
-                                                {
-                                                    "label": "Distribución de la distancia de viaje",
-                                                    "value": "trip_distance",
-                                                },
+                                                {"label": "Número de pasajeros", "value": "passengers"},
+                                                {"label": "Distribución del tiempo de viaje", "value": "trip_time"},
+                                                {"label": "Distribución de la distancia de viaje", "value": "trip_distance"},
                                             ],
                                             value="passengers",
                                             clearable=False,
-                                            className="mb-3 text-dark",
-                                            style={"backgroundColor": "white"},
+                                            className="mb-3",
                                         ),
                                         html.Div(
                                             id="map-info",
@@ -249,8 +239,7 @@ distritos_content = html.Div(
                                             ],
                                             value="distance",
                                             clearable=False,
-                                            className="mb-3 text-dark",
-                                            style={"backgroundColor": "white"},
+                                            className="mb-3",
                                         ),
                                     ]
                                 ),

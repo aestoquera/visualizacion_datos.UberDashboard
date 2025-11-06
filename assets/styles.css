@@ -94,3 +94,50 @@
   color: #000 !important;
   font-weight: 600;
 }
+/* Estilo del contenedor del dropdown */
+.Select-control {
+    background-color: #2b2b2b !important;
+    color: #eaeaea !important;
+    border-color: #444 !important;
+}
+
+/* Texto del valor seleccionado */
+.Select-value-label {
+    color: #eaeaea !important;
+}
+
+/* Placeholder */
+.Select-placeholder {
+    color: #999 !important;
+}
+
+/* Menú desplegable */
+.Select-menu-outer {
+    background-color: #2b2b2b !important;
+    border-color: #444 !important;
+}
+
+/* Cada opción */
+.Select-option {
+    background-color: #2b2b2b !important;
+    color: #eaeaea !important;
+    font-size: small;
+}
+
+/* Opción al pasar el mouse */
+.Select-option:hover {
+    background-color: #444 !important;
+    color: #fff !important;
+}
+
+/* Opción seleccionada */
+.is-selected {
+    background-color: #555 !important;
+    color: #fff !important;
+}
+
+/* Chips de selección múltiple */
+.Select-value {
+    background-color: #444 !important;
+    border-color: #555 !important;
+}
