@@ -9,9 +9,11 @@ from layout import app_layout
 from callbacks import register_callbacks
 
 # --- Crear app ---
-app = Dash(__name__, 
-           external_stylesheets=[dbc.themes.DARKLY], 
-           suppress_callback_exceptions=True)
+app = Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.DARKLY],
+    suppress_callback_exceptions=True,
+)
 
 # Asignar el layout a la aplicación
 app.layout = app_layout
