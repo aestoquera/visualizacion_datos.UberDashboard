@@ -285,7 +285,33 @@ def register_callbacks(app):
                         float(sel["dropoff_longitude"]),
                     ),
                     icon=red_icon if "red_icon" in globals() else None,
-                    children=[dl.Tooltip("Llegada")],
+                    children=[
+                        dl.Tooltip("Salida"),
+                        dl.Popup(
+                            html.Div(
+                                [
+                                    html.H5(
+                                        "🚖 Información del viaje",
+                                        className="text-dark",
+                                    ),
+                                    html.P(
+                                        f"👤 Pasajeros: {sel.get('passenger_count', 'N/A')}"
+                                    ),
+                                    html.P(
+                                        f"💰 Total: ${float(sel.get('total_amount', 0)):.2f}"
+                                    ),
+                                    html.P(
+                                        f"⏱️ Duración: {float(sel.get('trip_minutes', 0)):.1f} min"
+                                    ),
+                                    html.P(
+                                        f"🛣️ Distancia: {float(sel.get('trip_distance_km', 0)):.2f} km"
+                                    ),
+                                ],
+                                className="text-secondary",
+                                style={"color": "black"},
+                            )
+                        ),
+                    ],
                 )
                 children = [dl.TileLayer(), pickup_marker, dropoff_marker]
 
@@ -316,14 +342,14 @@ def register_callbacks(app):
                         html.P(
                             f"Viajes visibles (por bounds): 1", className="mb-0 small"
                         ),
-                        html.P(
-                            f"Lat range: {lat_min:.4f} — {lat_max:.4f}",
-                            className="mb-0 small",
-                        ),
-                        html.P(
-                            f"Lon range: {lon_min:.4f} — {lon_max:.4f}",
-                            className="mb-0 small",
-                        ),
+                        # html.P(
+                        #     f"Lat range: {lat_min:.4f} — {lat_max:.4f}",
+                        #     className="mb-0 small",
+                        # ),
+                        # html.P(
+                        #     f"Lon range: {lon_min:.4f} — {lon_max:.4f}",
+                        #     className="mb-0 small",
+                        # ),
                     ]
                 )
 
@@ -404,20 +430,20 @@ def register_callbacks(app):
             info = html.Div(
                 [
                     html.P(
-                        f"Viajes tras hora: {total_after_date}", className="mb-0 small"
+                        f"Viajes realizados en esta hora: {total_after_date}", className="mb-0 small"
                     ),
                     html.P(
                         f"Viajes visibles (por bounds): {len(visible)}",
                         className="mb-0 small",
                     ),
-                    html.P(
-                        f"Lat range: {lat_min:.4f} — {lat_max:.4f}",
-                        className="mb-0 small",
-                    ),
-                    html.P(
-                        f"Lon range: {lon_min:.4f} — {lon_max:.4f}",
-                        className="mb-0 small",
-                    ),
+                    # html.P(
+                    #     f"Lat range: {lat_min:.4f} — {lat_max:.4f}",
+                    #     className="mb-0 small",
+                    # ),
+                    # html.P(
+                    #     f"Lon range: {lon_min:.4f} — {lon_max:.4f}",
+                    #     className="mb-0 small",
+                    # ),
                 ]
             )
             return no_update, no_update, no_update, visible, info
@@ -553,19 +579,19 @@ def register_callbacks(app):
                     f"Viajes visibles (por bounds): {len(saved)}",
                     className="mb-0 small",
                 ),
-                html.P(
-                    f"Lat range: {lat_min:.4f} — {lat_max:.4f}", className="mb-0 small"
-                ),
-                html.P(
-                    f"Lon range: {lon_min:.4f} — {lon_max:.4f}", className="mb-0 small"
-                ),
+                # html.P(
+                #     f"Lat range: {lat_min:.4f} — {lat_max:.4f}", className="mb-0 small"
+                # ),
+                # html.P(
+                #     f"Lon range: {lon_min:.4f} — {lon_max:.4f}", className="mb-0 small"
+                # ),
             ]
         )
 
         return children, no_update, no_update, saved, info
 
     # ---------------------------------------------------------------------
-    # 4) CALLBACK: GRAFICOS -> ya lo proporcionaste; lo integro aquí con el mismo ID
+    # 4) CALLBACK: GRAFICOS
     #    - Input: analysis-dropdown, filtered-data-store
     #    - Output: analysis-graph.figure
     # ---------------------------------------------------------------------
@@ -739,7 +765,7 @@ def register_callbacks(app):
 
             header_text = "Doble Pirámide de Flujo: Métrica Promedio por Distrito (Salida vs. Llegada)"
 
-            # --- 1. Agregar datos por Origen (Salida) ---
+            # --- 1. Añadir datos por Origen (Salida) ---
             df_pickup = (
                 df_trips.groupby("pickup_borough")
                 .agg(
@@ -750,7 +776,7 @@ def register_callbacks(app):
                 .rename(columns={"pickup_borough": "borough"})
             )
 
-            # --- 2. Agregar datos por Destino (Llegada) ---
+            # --- 2. Añadir datos por Destino (Llegada) ---
             df_dropoff = (
                 df_trips.groupby("dropoff_borough")
                 .agg(
@@ -773,7 +799,6 @@ def register_callbacks(app):
             df_dropoff = df_dropoff.sort_values("borough")
 
             # --- 3. Crear Sub-plots ---
-            # Es necesario importar make_subplots al principio del archivo: from plotly.subplots import make_subplots
             from plotly.subplots import make_subplots
 
             fig = make_subplots(
@@ -915,7 +940,6 @@ def register_callbacks(app):
                 showticklabels=False,  # Ocultar labels para el segundo sub-plot
             )
 
-            # Agregar línea central para ambas pirámides
             fig.add_vline(
                 x=0, line_width=1, line_dash="dash", line_color="#AAAAAA", row=1, col=1
             )
@@ -1027,7 +1051,6 @@ def register_callbacks(app):
         if active_tab != "tab-pagos" or data.empty:
             raise dash.exceptions.PreventUpdate
 
-        # ... (Pasos 1, 2, 3a, 3b, 3c, 3d - sin cambios) ...
         df_waffle = data.copy()
         # q1 = df_waffle['total_amount'].quantile(0.25)
         # q2 = df_waffle['total_amount'].quantile(0.50)
@@ -1072,8 +1095,6 @@ def register_callbacks(app):
         ).index.tolist()
 
         # --- 4. Generación de HTML ---
-
-        # Leyenda (Sin cambios)
         legend_items = []
         legend_order = sorted(ICON_MAP.keys())
         for payment_type in legend_order:
@@ -1226,7 +1247,6 @@ def register_callbacks(app):
         if boroughs_selected and not (
             len(boroughs_selected) == 1 and boroughs_selected[0] == "ALL"
         ):
-            # Asumimos que las columnas son 'pickup_borough' en el dataset
             df = df[df["pickup_borough"].isin(boroughs_selected)]
 
         # Si después del filtrado quedó vacío
@@ -1301,7 +1321,7 @@ def register_callbacks(app):
         #         "lat": df["pickup_latitude"].median(),
         #         "lon": df["pickup_longitude"].median(),
         #     }
-        #     # Tamaño relativo: normalizamos co2_kg_trip para tamaño (si existe)
+        #     # Tamaño relativo: normalizamos co2_kg_trip para tamaño
         #     size_col = "co2_kg_trip" if "co2_kg_trip" in df.columns else metric_col
         #     # Evitamos tamaños 0: asignamos una columna auxiliar
         #     size_series = df[size_col].copy()
@@ -1374,7 +1394,6 @@ def register_callbacks(app):
     # -----------------------------------------------------------------
     # Callback para rellenar borough-dropdown con opciones detectadas
     # Esto permite que el dropdown muestre dinamicamente los boroughs existentes
-    # Si prefieres mantener las opciones estáticas, puedes omitir este callback.
     # -----------------------------------------------------------------
     @app.callback(
         Output("borough-dropdown", "options"),

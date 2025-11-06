@@ -35,19 +35,19 @@ viajes_content = html.Div(
                             [
                                 dbc.Row(
                                     [
+
                                         # Columna para el Botón (Aproximadamente 4 unidades de ancho)
                                         dbc.Col(
                                             dbc.Button(
                                                 "Mostrando salidas",
                                                 id="toggle-view-btn",
                                                 color="light",
-                                                className="w-100",  # w-100 para ocupar todo el ancho de la columna
+                                                className="w-100",
                                             ),
-                                            # Ajustamos la altura del botón para que esté centrado verticalmente
-                                            # y definimos el ancho de la columna (e.g., 4 de 12)
                                             width=4,
-                                            className="d-flex align-items-center mb-3",
+                                            className="d-flex flex-column justify-content-end", 
                                         ),
+                                        
                                         # Columna para el Filtro de Fecha (Aproximadamente 8 unidades de ancho)
                                         dbc.Col(
                                             html.Div(
@@ -106,9 +106,10 @@ viajes_content = html.Div(
                                             width=8,
                                         ),
                                     ],
-                                    className="g-2",  # g-0 elimina el espaciado horizontal (gutter) entre columnas
-                                ),
-                            ]
+                                    className="g-3 align-items-end", 
+                                )
+                            ],
+                            className="g-3"
                         ),
                         # Bloque del Mapa
                         dbc.Card(
@@ -118,19 +119,30 @@ viajes_content = html.Div(
                                     className="fw-bold bg-dark text-light",
                                 ),
                                 dbc.CardBody(
-                                    dl.Map(
-                                        id="map",
-                                        center=[center_lat, center_lon],
-                                        zoom=13,
-                                        style={"width": "100%", "height": "600px"},
-                                        children=[dl.TileLayer()],
-                                    )
-                                ),
+                                    html.Div(
+                                        dl.Map(
+                                            id="map",
+                                            center=[center_lat, center_lon],
+                                            zoom=13,
+                                            children=[html.Div(id="map-tiles"),],
+                                            style={"width": "100%", "flex": "1", "max-height":"350px"}, 
+
+                                        ),
+                                        # Convertimos este Div en un contenedor flex para que el mapa crezca
+                                        className="d-flex flex-column h-100", 
+                                    ),
+                                # CardBody debe ser un contenedor flex vertical para que su hijo crezca
+                                className="d-flex flex-column p-0", 
+                                )
+                                
                             ],
-                            className="shadow-lg border-light",
-                        ),
+                            # flex-grow-1, h-100, d-flex flex-column. Crece para llenar el espacio disponible
+                            className="shadow-lg border-light flex-grow-1 d-flex flex-column h-100",
+                        ), 
                     ],
                     width=8,
+                    # La columna entera debe ser un contenedor flex vertical
+                    className="h-100 d-flex flex-column",
                 ),
                 # Columna Derecha (Gráficos - 1/3)
                 dbc.Col(
@@ -160,23 +172,30 @@ viajes_content = html.Div(
                                         ),
                                         dcc.Graph(
                                             id="analysis-graph",
-                                            style={"height": "490px"},
+                                            style={"width": "100%", "flex": "1", "max-height":"350px"}, 
                                         ),
                                     ],
-                                    className="p-3",
+                                    className="p-3 d-flex flex-column",
                                 ),
                             ],
-                            className="shadow-lg border-light",
+                            # h-100, d-flex flex-column. Ocupa 100% de la columna y es contenedor flex
+                            className="shadow-lg border-light h-100 d-flex flex-column",
                         )
                     ],
                     width=4,
+                    # La columna entera debe ser un contenedor flex vertical
+                    className="h-100 d-flex flex-column",
                 ),
             ],
-            className="mt-4",
+            # La Row principal crece para ocupar el 100% del contenedor viajes_content
+            className="mt-4 flex-grow-1",
         ),
     ],
-    className="p-4",
+    # Contenedor principal. Fija la altura y se convierte en contenedor flex vertical.
+    style={"height": "75vh", "max-height":"75vh"},
+    className="p-4 d-flex flex-column",
 )
+
 
 # Contenido para la pestaña Distritos
 distritos_content = html.Div(
@@ -196,12 +215,13 @@ distritos_content = html.Div(
                                     [
                                         dcc.Graph(
                                             id="distritos-graph",
-                                            style={"height": "650px"},
+                                            style={"flex": "1"},
+                                            responsive=True
                                         )
                                     ]
                                 ),
                             ],
-                            className="shadow-lg border-light",
+                            className="shadow-lg border-light h-100 d-flex flex-column",
                         )
                     ],
                     width=9,
@@ -240,20 +260,23 @@ distritos_content = html.Div(
                                             value="distance",
                                             clearable=False,
                                             className="mb-3",
+                                            style={"flex": "1"}
                                         ),
                                     ]
                                 ),
                             ],
-                            className="shadow-lg border-light",
+                            className="shadow-lg border-light d-flex flex-column flex-grow-1",
                         )
                     ],
                     width=3,
+                    className="shadow-lg border-light h-100 d-flex flex-column",
                 ),
             ],
-            className="mt-4",
+            className="mt-4 h-100",
         )
     ],
-    className="p-4",
+    className="p-4 d-flex flex-column",
+    style={"height": "75vh"} 
 )
 
 # ----------------------------------------------------------------------
@@ -264,7 +287,7 @@ pagos_content = html.Div(
     [
         dbc.Row(
             [
-                # --- Columna Izquierda: Waffle Plot (2/3) --- (AHORA AQUI)
+                # --- Columna Izquierda: Waffle Plot (2/3) 
                 dbc.Col(
                     [
                         dbc.Card(
@@ -274,20 +297,26 @@ pagos_content = html.Div(
                                     className="fw-bold bg-dark text-light",
                                 ),
                                 dbc.CardBody(
-                                    # Este Div será llenado por el callback con el Waffle Plot generado en HTML
+                                    # El CardBody necesita ser un contenedor flex para que su contenido (el Div) crezca
                                     html.Div(
                                         id="waffle-plot-container",
-                                        style={"height": "650px", "overflowY": "auto"},
+                                        # 'flex: 1' para que el Div ocupe todo el espacio restante dentro del CardBody
+                                        style={"flex": "1"}, 
                                     ),
-                                    className="p-3",
+                                    # 'd-flex flex-column' permite que el div interno crezca
+                                    className="p-3 d-flex flex-column",
+                                    style={"max-height": "400px"}, 
                                 ),
                             ],
-                            className="shadow-lg border-light",
+                            # h-100 para que la Card ocupe el 100% de la altura de la Columna
+                            className="shadow-lg border-light h-100 d-flex flex-column",
                         )
                     ],
-                    width=8,
-                ),  # Ocupa 2/3 del ancho (8 unidades)
-                # --- Columna Derecha: Gráfico Sankey (1/3) --- (AHORA AQUI)
+                    width=8,  # Ocupa 2/3 del ancho
+                    # La columna debe tomar 100% de la altura de la Row
+                    className="h-100", 
+                ),
+                # --- Columna Derecha: Gráfico Sankey (1/3) 
                 dbc.Col(
                     [
                         dbc.Card(
@@ -298,21 +327,31 @@ pagos_content = html.Div(
                                 ),
                                 dbc.CardBody(
                                     dcc.Graph(
-                                        id="sankey-graph", style={"height": "650px"}
+                                        id="sankey-graph", 
+                                        # 'flex: 1' para que el dcc.Graph ocupe todo el CardBody
+                                        style={"flex": "1"},
+                                        responsive=True # Ayuda a que Plotly.js se ajuste al nuevo tamaño
                                     ),
-                                    className="p-0",
+                                    # CardBody sin padding (p-0) debe ser un contenedor flex
+                                    className="p-0 d-flex flex-column mb-4",
                                 ),
                             ],
-                            className="shadow-lg border-light",
+                            # La Card debe ser y 'd-flex flex-column' para que CardBody pueda crecer
+                            className="shadow-lg border-light d-flex flex-column",
                         )
                     ],
-                    width=4,
-                ),  # Ocupa 1/3 del ancho (4 unidades)
+                    width=4,  # Ocupa 1/3 del ancho
+                    # La columna también debe tomar 100% de la altura de la Row
+                    className="h-100", 
+                ),
             ],
-            className="mt-4",
+            # La Row necesita crecer para ocupar todo el espacio del Div padre
+            className="mt-4 flex-grow-1",
         )
     ],
-    className="p-4",
+    # El Div principal establece la altura total (75vh) y es el contenedor Flexbox raíz
+    className="p-4 d-flex flex-column",
+    style={"height": "100vh"} 
 )
 
 # --- LAYOUT DE LA PESTAÑA DE EVOLUCIÓN ---
@@ -339,36 +378,41 @@ evolucion_content = html.Div(
                                             {'label': 'Minutos Totales (viaje)', 'value': 'trip_minutes'},
                                             {'label': 'Distancia Total (km)', 'value': 'trip_distance_km'},
                                         ],
-                                        value='passenger_count', # Valor por defecto
-                                        inline=True, # Muestra las opciones en horizontal
-                                        className="mb-4",
+                                        value='passenger_count',
+                                        inline=True,
+                                        className="mb-4", # <-- Esto toma su altura natural (flex-shrink: 0)
                                     ),
-                                    # El gráfico se renderizará aquí
                                     dcc.Graph(
-                                        id="lollipop-chart", 
-                                        style={"height": "600px"}
+                                        id="lollipop-chart",
+                                        # ELIMINADO: style={"height": "600px"}
+                                        style={"flex": "1"}, # El gráfico "crece" para llenar el espacio restante
+                                        responsive=True # Asegura que Plotly se redibuje al cambiar el tamaño
                                     ),
-                                ]
+                                ],
+                                className="d-flex flex-column flex-grow-1" # El CardBody crece y apila a sus hijos
                             ),
                         ],
-                        className="shadow-lg border-light",
+                        className="shadow-lg border-light h-100 d-flex flex-column", # La Card llena la Columna y es un contenedor flex
                     ),
-                    width=12, # Ocupa todo el ancho
+                    width=12,
+                    className="h-100" # La Columna debe llenar la altura de la Fila
                 )
             ],
-            className="mt-4",
+            className="mt-4 flex-grow-1", # La Fila "crece" para llenar el Div principal
         )
     ],
-    className="p-4",
+    className="p-4 d-flex flex-column", # El Div principal es un contenedor flex vertical
+    style={"height": "75vh"} 
 )
 # ----------------------------------------------------------------------
 # --- LAYOUT EMISIONES CARBONO ---
 # ----------------------------------------------------------------------
+
 emisiones_de_carbono_content = html.Div(
     [
         dbc.Row(
             [
-                # CONTROLES (columna derecha más pequeña)
+                # COLUMNA DE CONTROLES (width=4)
                 dbc.Col(
                     [
                         dbc.Card(
@@ -379,17 +423,13 @@ emisiones_de_carbono_content = html.Div(
                                 ),
                                 dbc.CardBody(
                                     [
+                                        # Todo el contenido de filtros tiene altura NATURAL (no crece)
                                         html.Div(
                                             [
                                                 html.Label("Borough (Pickup)"),
                                                 dcc.Dropdown(
                                                     id="borough-dropdown",
-                                                    options=[
-                                                        {
-                                                            "label": "Todos",
-                                                            "value": "ALL",
-                                                        }
-                                                    ],
+                                                    options=[{"label": "Todos", "value": "ALL"}],
                                                     value=["ALL"],
                                                     multi=True,
                                                     placeholder="Selecciona borough(s)...",
@@ -398,55 +438,39 @@ emisiones_de_carbono_content = html.Div(
                                                 html.Label("Rango de horas (pickup)"),
                                                 dcc.RangeSlider(
                                                     id="hour-range-slider",
-                                                    min=0,
-                                                    max=23,
-                                                    step=1,
-                                                    value=[0, 23],
-                                                    marks={
-                                                        i: str(i)
-                                                        for i in range(0, 24, 3)
-                                                    },
-                                                    tooltip={
-                                                        "placement": "bottom",
-                                                        "always_visible": False,
-                                                    },
+                                                    min=0, max=23, step=1, value=[0, 23],
+                                                    marks={i: str(i) for i in range(0, 24, 3)},
+                                                    tooltip={"placement": "bottom", "always_visible": False},
                                                 ),
                                                 html.Br(),
                                                 html.Label("Métrica de CO₂"),
                                                 dcc.RadioItems(
                                                     id="metric-radio",
                                                     options=[
-                                                        {
-                                                            "label": "CO₂ total por viaje",
-                                                            "value": "co2_kg_trip",
-                                                        },
-                                                        {
-                                                            "label": "CO₂ por km (kg/km)",
-                                                            "value": "co2_kg_per_km",
-                                                        },
-                                                        {
-                                                            "label": "CO₂ por pasajero (kg/pax)",
-                                                            "value": "co2_kg_per_passenger",
-                                                        },
+                                                        {"label": "CO₂ total por viaje", "value": "co2_kg_trip"},
+                                                        {"label": "CO₂ por km (kg/km)", "value": "co2_kg_per_km"},
+                                                        {"label": "CO₂ por pasajero (kg/pax)", "value": "co2_kg_per_passenger"},
                                                     ],
                                                     value="co2_kg_trip",
                                                     inline=False,
                                                 ),
                                                 html.Hr(),
-                                            ]
+                                            ],
                                         )
                                     ],
-                                    className="p-2",
+                                    className="p-2 flex-grow-1" # Permitimos que CardBody crezca si la Card lo necesita
                                 ),
                             ],
-                            className="shadow-sm border-light",
+                            className="shadow-sm border-light h-100", # Ocupa el 100% de la Columna
                         ),
                     ],
                     width=4,
+                    className="h-100 d-flex flex-column", # Columna toma 100% de altura y es un contenedor flex
                 ),
-                # GRÁFICOS (columna izquierda mayor)
+                # COLUMNA DE GRÁFICOS (width=8)
                 dbc.Col(
                     [
+                        # PRIMER GRÁFICO (Se le permite crecer, pero tiene un mínimo)
                         dbc.Card(
                             [
                                 dbc.CardHeader(
@@ -455,13 +479,20 @@ emisiones_de_carbono_content = html.Div(
                                 ),
                                 dbc.CardBody(
                                     dcc.Graph(
-                                        id="co2-hourly-graph", style={"height": "320px"}
+                                        id="co2-hourly-graph",
+                                        # Eliminamos la altura fija. Usamos flex: 1 para que tome la mitad del espacio restante
+                                        style={"flex": "1"}, 
+                                        responsive=True 
                                     ),
-                                    className="p-2",
+                                    # CardBody es flex-column para que el dcc.Graph pueda crecer
+                                    className="p-2 d-flex flex-column", 
                                 ),
                             ],
-                            className="shadow-lg border-light mb-3",
+                            # flex-grow-1, shadow-lg, border-light, mb-3
+                            # El mb-3 es un margen que no queremos que flex-grow absorba
+                            className="shadow-lg border-light mb-3 flex-grow-1 d-flex flex-column", 
                         ),
+                        # SEGUNDO GRÁFICO (Se le permite crecer y tiene una preferencia de espacio)
                         dbc.Card(
                             [
                                 dbc.CardHeader(
@@ -471,36 +502,33 @@ emisiones_de_carbono_content = html.Div(
                                 dbc.CardBody(
                                     dcc.Graph(
                                         id="co2-treemap-graph",
-                                        style={"height": "500px"},
+                                        # ELIMINADO: style={"height": "500px"}
+                                        # Usamos flex: 1 para que tome la mitad del espacio restante
+                                        style={"flex": "1"}, 
+                                        responsive=True
                                     ),
-                                    className="p-2",
+                                    # CardBody es flex-column para que el dcc.Graph pueda crecer
+                                    className="p-2 d-flex flex-column",
                                 ),
                             ],
-                            className="shadow-lg border-light mb-3",
+                            # flex-grow-1, shadow-lg, border-light, mb-3
+                            className="shadow-lg border-light mb-3 flex-grow-1 d-flex flex-column", 
                         ),
-                        # dbc.Card(
-                        #     [
-                        #         dbc.CardHeader(
-                        #             "Mapa de pickups (CO₂ por viaje)",
-                        #             className="fw-bold bg-dark text-light",
-                        #         ),
-                        #         dbc.CardBody(
-                        #             dcc.Graph(
-                        #                 id="co2-map-graph", style={"height": "520px"}
-                        #             ),
-                        #             className="p-2",
-                        #         ),
-                        #     ],
-                        #     className="shadow-lg border-light mb-3",
-                        # ),
+                        # Si quieres añadir el tercer gráfico (Mapa), hazlo de la misma forma:
+                        # dbc.Card(..., className="... flex-grow-1 d-flex flex-column")
                     ],
                     width=8,
+                    # Columna toma 100% de altura y es un contenedor flex vertical para los dos Cards
+                    className="h-100 d-flex flex-column", 
                 ),
             ],
-            className="mt-4",
+            # La Row crece para llenar el Div principal
+            className="mt-4 flex-grow-1", 
         )
     ],
-    className="p-4",
+    # Altura total limitada a 75vh y convertido en contenedor flex vertical
+    style={"height": "75vh"},
+    className="p-4 d-flex flex-column",
 )
 # ----------------------------------------------------------------------
 # --- LAYOUT PRINCIPAL ---

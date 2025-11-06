@@ -82,7 +82,7 @@
   text-shadow: none !important; /* elimina efectos que aclaren o modifiquen el color */
 }
 
-/* Opcional: mejora la legibilidad del popup */
+/* Mejora la legibilidad del popup */
 .leaflet-popup-content {
   font-size: 14px;
   line-height: 1.4;
@@ -121,7 +121,6 @@
 .Select-option {
     background-color: #2b2b2b !important;
     color: #eaeaea !important;
-    font-size: small;
 }
 
 /* Opción al pasar el mouse */
