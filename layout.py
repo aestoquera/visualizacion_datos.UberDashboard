@@ -315,9 +315,51 @@ pagos_content = html.Div(
     className="p-4",
 )
 
-# Contenidos para otras pestañas
+# --- LAYOUT DE LA PESTAÑA DE EVOLUCIÓN ---
+
 evolucion_content = html.Div(
-    html.H4("Contenido de Evolución (Próximamente)", className="p-5 text-light")
+    [
+        dbc.Row(
+            [
+                dbc.Col(
+                    dbc.Card(
+                        [
+                            dbc.CardHeader(
+                                "Evolución Temporal de Métricas por Hora",
+                                className="fw-bold bg-dark text-light",
+                            ),
+                            dbc.CardBody(
+                                [
+                                    dbc.Label("Seleccionar Métrica:", className="fw-bold"),
+                                    dbc.RadioItems(
+                                        id="metric-selector",
+                                        options=[
+                                            {'label': 'Nº Pasajeros', 'value': 'passenger_count'},
+                                            {'label': 'Ingresos Totales ($)', 'value': 'total_amount'},
+                                            {'label': 'Minutos Totales (viaje)', 'value': 'trip_minutes'},
+                                            {'label': 'Distancia Total (km)', 'value': 'trip_distance_km'},
+                                        ],
+                                        value='passenger_count', # Valor por defecto
+                                        inline=True, # Muestra las opciones en horizontal
+                                        className="mb-4",
+                                    ),
+                                    # El gráfico se renderizará aquí
+                                    dcc.Graph(
+                                        id="lollipop-chart", 
+                                        style={"height": "600px"}
+                                    ),
+                                ]
+                            ),
+                        ],
+                        className="shadow-lg border-light",
+                    ),
+                    width=12, # Ocupa todo el ancho
+                )
+            ],
+            className="mt-4",
+        )
+    ],
+    className="p-4",
 )
 # ----------------------------------------------------------------------
 # --- LAYOUT EMISIONES CARBONO ---

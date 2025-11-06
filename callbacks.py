@@ -1393,3 +1393,94 @@ def register_callbacks(app):
         ]
         # por defecto seleccionar "ALL"
         return options, ["ALL"]
+    # ----------------------------------------------------------------------
+    # --- CALLBACK 8: ACTUALIZAR GRÁFICO LOLLIPOP DE EVOLUCIÓN ---
+    # ----------------------------------------------------------------------
+    @app.callback(
+        Output("lollipop-chart", "figure"),
+        [
+            Input("tabs", "active_tab"),
+            Input("metric-selector", "value") # Input del RadioItems
+        ]
+    )
+    def update_lollipop_chart(active_tab, selected_metric):
+        
+        # (Paso 1: Cláusula de guarda)
+        if active_tab != "tab-evolucion" or data.empty:
+            raise PreventUpdate
+        if not pd.api.types.is_datetime64_any_dtype(data['tpep_pickup_datetime']):
+            df = data.copy()
+            df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
+        else:
+            df = data.copy()
+
+        # Extraer la hora
+        df['hour'] = df['tpep_pickup_datetime'].dt.hour
+        
+        # Agrupar por hora y sumar la métrica seleccionada
+        df_grouped = df.groupby('hour')[selected_metric].sum().reset_index()
+
+        # (Paso 3: Definir etiquetas para el gráfico)
+        metric_labels = {
+            'passenger_count': 'Número Total de Pasajeros',
+            'total_amount': 'Ingresos Totales ($)',
+            'trip_minutes': 'Minutos Totales de Viaje',
+            'trip_distance_km': 'Distancia Total Recorrida (km)'
+        }
+        
+        y_label = metric_labels.get(selected_metric, 'Valor')
+        chart_title = f'{y_label} por Hora del Día'
+
+        # (Paso 4: Crear el gráfico Lollipop con Plotly)
+        
+        fig = go.Figure()
+        
+        y_values = df_grouped[selected_metric]
+        x_values = df_grouped['hour']
+
+        # --- Trace 1: Los "Palos" (Stems) ---
+        # Usamos un gráfico de barras muy finas para simular los palos
+        fig.add_trace(go.Bar(
+            x=x_values,
+            y=y_values,
+            width=0.05, # Ancho muy pequeño para el "palo"
+            name='Volumen',
+            marker=dict(
+                color=y_values,  # Colorear según el valor
+                colorscale='Cividis', 
+                showscale=True,
+                colorbar_title=y_label
+            )
+        ))
+
+        # --- Trace 2: Las "Cabezas" (Pops) ---
+        # Usamos un gráfico de dispersión (scatter) para las cabezas
+        fig.add_trace(go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode='markers',
+            name='Punto',
+            marker=dict(
+                size=10,
+                color=y_values, # Mismo color que los palos
+                colorscale='Cividis',
+                showscale=False # No necesitamos una segunda barra de color
+            )
+        ))
+
+        # (Paso 5: Configurar el Layout del gráfico)
+        fig.update_layout(
+            title=chart_title,
+            xaxis_title='Hora del Día (0-23)',
+            yaxis_title=y_label,
+            xaxis=dict(
+                tickmode='array',
+                tickvals=list(range(24)) # Asegurar que se muestren las 24 horas
+            ),
+            plot_bgcolor='white',
+            showlegend=False, # La leyenda no es necesaria aquí
+            barmode='overlay', # Para superponer barras y puntos
+            template='plotly_white'
+        )
+
+        return fig
