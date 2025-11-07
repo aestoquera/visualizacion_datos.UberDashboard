@@ -18,16 +18,16 @@ plotly_style = {
     "colorway": [CONTRAST_COLOR, "#6c757d", "#9ad0f5", "#f1c40f", "#e74c3c"],
     "legend": {"bgcolor": "rgba(0,0,0,0)", "borderwidth": 0, "orientation": "h"},
     "xaxis": {
-        "showgrid": False,
+        "showgrid": True,
         "zeroline": False,
-        "showline": False,
+        "showline": True,
         "tickfont": {"color": TEXT_COLOR},
         "titlefont": {"color": TEXT_COLOR},
     },
     "yaxis": {
-        "showgrid": False,
+        "showgrid": True,
         "zeroline": False,
-        "showline": False,
+        "showline": True,
         "tickfont": {"color": TEXT_COLOR},
         "titlefont": {"color": TEXT_COLOR},
     },
@@ -42,17 +42,76 @@ plotly_style = {
 
 # Tab 1
 # Graficos a la izquierda del mapa
+def stylize_violin(fig, data, column_name, ylabel):
+    import numpy as np
+
+    vals = data[column_name].dropna().values
+    q1, q2, q3 = np.percentile(vals, [25, 50, 75])
+    vmin, vmax = vals.min(), vals.max()
+    median = np.median(vals)
+
+    # --- Desactivar hover feo
+    fig.update_traces(hoverinfo="skip", hovertemplate=None)
+
+    # --- Estilos globales
+    fig.update_layout(**plotly_style)
+    fig.update_yaxes(title=ylabel)
+
+    # --- Cajas flotantes
+    x_pos = -0.2
+    spacing = 5
+
+    def add_box(label, y):
+        fig.add_annotation(
+            x=x_pos,
+            y=y,
+            text=label,
+            showarrow=False,
+            xanchor="right",
+            font=dict(color=TEXT_COLOR, size=10),
+            align="center",
+            bgcolor="rgba(31,186,214,0.12)",
+            bordercolor=CONTRAST_COLOR,
+            borderwidth=1,
+            borderpad=6,
+            opacity=0.93,
+        )
+
+    add_box(f"Min: {vmin:.1f}", vmin)
+    add_box(f"Q1: {q1:.1f}", q1 + spacing)
+    add_box(f"Q2: {median:.1f}", median + spacing * 2)
+    add_box(f"Q3: {q3:.1f}", q3 + spacing * 3)
+    add_box(f"Max: {vmax:.1f}", vmax + spacing)
+
+    return fig
+
 def tab1_violin_plot(filtered_data, num_trips):
     fig = px.violin(
-                    filtered_data,
-                    y="trip_minutes",
-                    box=True,
-                    points="all",
-                    title=f"Distribución del Tiempo de Viaje ({num_trips} viajes)",
-                    color_discrete_sequence=["#42f2f5"],
-                )
-    fig.update_layout(yaxis_title="Minutos de Viaje", **plotly_style)
+        filtered_data,
+        y="trip_minutes",
+        box=True,
+        points=None,
+        title=f"Distribución del Tiempo de Viaje ({num_trips} viajes)",
+        color_discrete_sequence=[CONTRAST_COLOR],
+    )
+
+    fig = stylize_violin(fig, filtered_data, "trip_minutes", "Minutos de Viaje")
     return fig
+
+
+def tab1_violin_distancia(filtered_data, num_trips):
+    fig = px.violin(
+        filtered_data,
+        y="trip_distance_km",
+        box=True,
+        points=None,
+        title=f"Distribución de la Distancia de Viaje ({num_trips} viajes)",
+        color_discrete_sequence=[CONTRAST_COLOR],
+    )
+
+    fig = stylize_violin(fig, filtered_data, "trip_distance_km", "Distancia (km)")
+    return fig
+
 
 def tab1_treemap_pasajeros(passenger_counts, num_trips):
     """
@@ -81,18 +140,6 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
     # Aplicar estilos globales
     fig.update_layout(**plotly_style)
 
-    return fig
-def tab1_violin_distancia(filtered_data, num_trips):
-    """Violin de distancias."""
-    fig = px.violin(
-        filtered_data,
-        y="trip_distance_km",
-        box=True,
-        points="all",
-        title=f"Distribución de la Distancia de Viaje ({num_trips} viajes)",
-        color_discrete_sequence=["#ffc107"],
-    )
-    fig.update_layout(yaxis_title="Distancia (km)", **plotly_style)
     return fig
 
 # Tab 2
