@@ -95,6 +95,7 @@ viajes_content = html.Div(
                                                         "Usa el botón para ver las salidas o llegadas de los viajes.",
                                                         "Haz clic sobre un coche para ver un viaje individual.",
                                                         "Una vez has aislado un viaje, vuelve a hacer click en cualquier coche para ver información detallada del viaje",
+                                                        "Haz click en el boton de ver salidas/llegadas para volver a ver todos los coches",
                                                         "Elige una hora de inicio y final para ver todos los viajes hechos en esa hora y hacer que los gráficos reaccionen",
                                                         "Muévete por el mapa para que los gráficos de la derecha reaccionen a lo que se ve en el mapa."
                                                     ]

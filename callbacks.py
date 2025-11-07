@@ -5,8 +5,8 @@ from dash import Input, Output, State, callback_context, ALL, no_update
 import dash
 import pandas as pd
 import numpy as np
-import plotly.express as px
-import plotly.graph_objs as go
+
+
 import dash_leaflet as dl
 from dash.exceptions import PreventUpdate
 from dash import html, dcc
@@ -21,6 +21,7 @@ from layout import (
     evolucion_content,
     emisiones_de_carbono_content,
 )
+from my_plots import *
 
 DEFAULT_PAYMENT_TYPE = "Otros"
 
@@ -601,10 +602,7 @@ def register_callbacks(app):
         Input("filtered-data-store", "data"),
     )
     def update_analysis_graph(selected_value, filtered_data_dict):
-        plotly_style = {
-            "template": "plotly_dark",
-            "margin": dict(t=50, l=25, r=25, b=25),
-        }
+
 
         if not filtered_data_dict or len(filtered_data_dict) == 0:
             fig = go.Figure()
@@ -617,7 +615,7 @@ def register_callbacks(app):
                 showarrow=False,
                 font=dict(size=16, color="#AAAAAA"),
             )
-            fig.update_layout(title="Ajuste el Zoom", **plotly_style)
+            fig.update_layout(title="Ajuste el Zoom")
             return fig
 
         filtered_data = pd.DataFrame(filtered_data_dict)
@@ -633,41 +631,17 @@ def register_callbacks(app):
                 passenger_counts["passenger_count"].astype(str) + " Pasajeros"
             )
 
-            fig = px.treemap(
-                passenger_counts,
-                path=[px.Constant(f"{num_trips} Viajes"), "passenger_count_str"],
-                values="frequency",
-                title=f"Frecuencia por Nº de Pasajeros ({num_trips} viajes)",
-                color="frequency",
-                color_continuous_scale="Blues",
-            )
-            fig.update_layout(**plotly_style)
+            fig = tab1_treemap_pasajeros(passenger_counts, num_trips)
             return fig
 
         # Violin - tiempo
         elif selected_value == "trip_time":
-            fig = px.violin(
-                filtered_data,
-                y="trip_minutes",
-                box=True,
-                points="all",
-                title=f"Distribución del Tiempo de Viaje ({num_trips} viajes)",
-                color_discrete_sequence=["#42f2f5"],
-            )
-            fig.update_layout(yaxis_title="Minutos de Viaje", **plotly_style)
+            fig = tab1_violin_plot(filtered_data, num_trips)
             return fig
 
         # Violin - distancia
         elif selected_value == "trip_distance":
-            fig = px.violin(
-                filtered_data,
-                y="trip_distance_km",
-                box=True,
-                points="all",
-                title=f"Distribución de la Distancia de Viaje ({num_trips} viajes)",
-                color_discrete_sequence=["#ffc107"],
-            )
-            fig.update_layout(yaxis_title="Distancia (km)", **plotly_style)
+            fig = tab1_violin_distancia(filtered_data, num_trips)
             return fig
 
         # Default vacío
@@ -741,21 +715,7 @@ def register_callbacks(app):
             )
             df_pivot = df_pivot.fillna(0)  # Rellenar NaNs con 0 (viajes que no ocurren)
 
-            fig = px.imshow(
-                df_pivot,
-                text_auto=text_format,
-                aspect="auto",
-                color_continuous_scale=color_scale,
-                title=header_text,
-                labels=dict(
-                    x="Distrito de Llegada",
-                    y="Distrito de Salida",
-                    color=f"Promedio de {metric_col}",
-                ),
-            )
-
-            fig.update_xaxes(side="top")
-            fig.update_layout(**plotly_style)
+            fig = tab1_heatmap_distritos(df_pivot, text_format, color_scale, header_text, metric_col)
             return fig, header_text
 
         # ---------------------------------------
@@ -797,156 +757,7 @@ def register_callbacks(app):
             )
             df_pickup = df_pickup.sort_values("borough")
             df_dropoff = df_dropoff.sort_values("borough")
-
-            # --- 3. Crear Sub-plots ---
-            from plotly.subplots import make_subplots
-
-            fig = make_subplots(
-                rows=1,
-                cols=2,
-                subplot_titles=(
-                    "Distritos de Salida (Pickup)",
-                    "Distritos de Llegada (Dropoff)",
-                ),
-                horizontal_spacing=0.05,
-            )
-
-            # Definir el rango máximo para que ambos subplots tengan el mismo eje X simétrico
-            max_val_pickup = max(
-                df_pickup["avg_time"].max(), df_pickup["avg_distance"].max()
-            )
-            max_val_dropoff = max(
-                df_dropoff["avg_time"].max(), df_dropoff["avg_distance"].max()
-            )
-            max_global = max(max_val_pickup, max_val_dropoff) * 1.1
-
-            # --- SUBPLOT 1: SALIDAS (Pickup) ---
-            # Tiempo Medio (Izquierda, barras negativas)
-            fig.add_trace(
-                go.Bar(
-                    y=df_pickup["borough"],
-                    x=-df_pickup["avg_time"],
-                    name="Tiempo Salida (min)",
-                    orientation="h",
-                    marker_color="#20C997",
-                    showlegend=True,
-                ),
-                row=1,
-                col=1,
-            )
-
-            # Distancia Media (Derecha, barras positivas)
-            fig.add_trace(
-                go.Bar(
-                    y=df_pickup["borough"],
-                    x=df_pickup["avg_distance"],
-                    name="Distancia Salida (km)",
-                    orientation="h",
-                    marker_color="#F1C40F",
-                    showlegend=True,
-                ),
-                row=1,
-                col=1,
-            )
-
-            # --- SUBPLOT 2: LLEGADAS (Dropoff) ---
-            # Tiempo Medio (Izquierda, barras negativas)
-            fig.add_trace(
-                go.Bar(
-                    y=df_dropoff["borough"],
-                    x=-df_dropoff["avg_time"],
-                    name="Tiempo Llegada (min)",
-                    orientation="h",
-                    marker_color="#20C997",
-                    showlegend=False,  # La leyenda es compartida
-                ),
-                row=1,
-                col=2,
-            )
-
-            # Distancia Media (Derecha, barras positivas)
-            fig.add_trace(
-                go.Bar(
-                    y=df_dropoff["borough"],
-                    x=df_dropoff["avg_distance"],
-                    name="Distancia Llegada (km)",
-                    orientation="h",
-                    marker_color="#F1C40F",
-                    showlegend=False,  # La leyenda es compartida
-                ),
-                row=1,
-                col=2,
-            )
-
-            # --- 4. Configuración del Layout ---
-            # Configuración general
-            fig.update_layout(
-                barmode="overlay",
-                title=header_text,
-                legend=dict(
-                    x=0.5,
-                    y=1.1,
-                    xanchor="center",
-                    orientation="h",
-                    bgcolor="rgba(255, 255, 255, 0)",
-                ),
-                **plotly_style,
-            )
-
-            # Configuración Eje X (Subplot 1 - Salida)
-            fig.update_xaxes(
-                row=1,
-                col=1,
-                range=[-max_global, max_global],
-                title_text="Tiempo Medio (min) <---- | ----> Distancia Media (km)",
-                tickvals=[
-                    i for i in range(-int(max_global), int(max_global) + 1) if i != 0
-                ],
-                ticktext=[
-                    str(abs(i))
-                    for i in range(-int(max_global), int(max_global) + 1)
-                    if i != 0
-                ],
-            )
-            # Configuración Eje X (Subplot 2 - Llegada)
-            fig.update_xaxes(
-                row=1,
-                col=2,
-                range=[-max_global, max_global],
-                title_text="Tiempo Medio (min) <---- | ----> Distancia Media (km)",
-                tickvals=[
-                    i for i in range(-int(max_global), int(max_global) + 1) if i != 0
-                ],
-                ticktext=[
-                    str(abs(i))
-                    for i in range(-int(max_global), int(max_global) + 1)
-                    if i != 0
-                ],
-            )
-
-            # Configuración Eje Y (Compartido)
-            # Solo mostrar los labels del Eje Y en el sub-plot de Salida (izquierda)
-            fig.update_yaxes(
-                row=1,
-                col=1,
-                title_text="Distrito",
-                tickvals=borough_order,
-                ticktext=borough_order,
-                categoryorder="category ascending",
-            )
-            fig.update_yaxes(
-                row=1,
-                col=2,
-                showticklabels=False,  # Ocultar labels para el segundo sub-plot
-            )
-
-            fig.add_vline(
-                x=0, line_width=1, line_dash="dash", line_color="#AAAAAA", row=1, col=1
-            )
-            fig.add_vline(
-                x=0, line_width=1, line_dash="dash", line_color="#AAAAAA", row=1, col=2
-            )
-
+            fig = tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_text)
             return fig, header_text
 
         # En caso de que se seleccione un valor no manejado
@@ -1000,44 +811,8 @@ def register_callbacks(app):
         targets = [3, 3, 3, 4, 5, 6]  # Índices de 'labels'
         values = [s_fare, s_extra, s_tip, s_tolls, s_surcharge, s_profit]
 
-        # Colores de los flujos
-        link_colors = [
-            "green",  # fare
-            "green",  # extra
-            "yellow",  # tip
-            "gray",  # tolls
-            "gray",  # surcharge
-            "green",  # profit
-        ]
-
         # --- Creación de la Figura ---
-        fig = go.Figure(
-            go.Sankey(
-                arrangement="snap",  # Alinea los nodos verticalmente
-                node=dict(
-                    pad=25,
-                    thickness=20,
-                    line=dict(color="black", width=0.5),
-                    label=labels,
-                    color="#343a40",  # Color oscuro para los nodos
-                ),
-                link=dict(
-                    source=sources,
-                    target=targets,
-                    value=values,
-                    color=link_colors,
-                    hovertemplate="Flujo: %{value:,.2f} $<extra></extra>",
-                ),
-            )
-        )
-
-        fig.update_layout(
-            title_text="Flujo de Dinero: Desde Cobros hasta Ganancia Neta",
-            font_color="white",
-            paper_bgcolor="#222222",  # Color de fondo oscuro
-            plot_bgcolor="#222222",
-            margin=dict(l=20, r=20, b=20, t=50),
-        )
+        fig = tab3_sankey_flujo(labels, sources, targets, values)
 
         return fig
 
@@ -1298,15 +1073,8 @@ def register_callbacks(app):
             y_vals = "mean"
             y_label = title_map.get(metric_col, metric_col)
 
-        co2_hourly_fig = px.bar(
-            hourly,
-            x="pickup_hour",
-            y=y_vals,
-            labels={"pickup_hour": "Hora (0-23)", y_vals: y_label},
-            title=f"{title_map.get(metric_col, metric_col)} ({hourly['count'].sum()} viajes en el filtro)",
-            hover_data={"pickup_hour": True, y_vals: True, "count": True},
-        )
-        co2_hourly_fig.update_layout(xaxis=dict(tickmode="linear"), **plotly_style)
+        co2_hourly_fig = tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map)
+        co2_hourly_fig.update_layout(xaxis=dict(tickmode="linear"))
 
         # --- 2) MAP: scatter_mapbox ---
         # Comprobamos coordenadas válidas
@@ -1380,14 +1148,7 @@ def register_callbacks(app):
         )
         treemap_df.columns = ["pickup_borough", "co2_kg_sum"]
 
-        co2_treemap_fig = px.treemap(
-            treemap_df,
-            path=["pickup_borough"],
-            values="co2_kg_sum",
-            title="Contribución de CO₂ por Borough(kg total)",
-            hover_data={"co2_kg_sum": True},
-        )
-        co2_treemap_fig.update_layout(**plotly_style)
+        co2_treemap_fig = tab4_co2_treemap(treemap_df)
 
         return co2_hourly_fig, co2_treemap_fig
 
@@ -1450,56 +1211,7 @@ def register_callbacks(app):
         y_label = metric_labels.get(selected_metric, 'Valor')
         chart_title = f'{y_label} por Hora del Día'
 
-        # (Paso 4: Crear el gráfico Lollipop con Plotly)
-        
-        fig = go.Figure()
-        
         y_values = df_grouped[selected_metric]
         x_values = df_grouped['hour']
-
-        # --- Trace 1: Los "Palos" (Stems) ---
-        # Usamos un gráfico de barras muy finas para simular los palos
-        fig.add_trace(go.Bar(
-            x=x_values,
-            y=y_values,
-            width=0.05, # Ancho muy pequeño para el "palo"
-            name='Volumen',
-            marker=dict(
-                color=y_values,  # Colorear según el valor
-                colorscale='Cividis', 
-                showscale=True,
-                colorbar_title=y_label
-            )
-        ))
-
-        # --- Trace 2: Las "Cabezas" (Pops) ---
-        # Usamos un gráfico de dispersión (scatter) para las cabezas
-        fig.add_trace(go.Scatter(
-            x=x_values,
-            y=y_values,
-            mode='markers',
-            name='Punto',
-            marker=dict(
-                size=10,
-                color=y_values, # Mismo color que los palos
-                colorscale='Cividis',
-                showscale=False # No necesitamos una segunda barra de color
-            )
-        ))
-
-        # (Paso 5: Configurar el Layout del gráfico)
-        fig.update_layout(
-            title=chart_title,
-            xaxis_title='Hora del Día (0-23)',
-            yaxis_title=y_label,
-            xaxis=dict(
-                tickmode='array',
-                tickvals=list(range(24)) # Asegurar que se muestren las 24 horas
-            ),
-            plot_bgcolor='white',
-            showlegend=False, # La leyenda no es necesaria aquí
-            barmode='overlay', # Para superponer barras y puntos
-            template='plotly_white'
-        )
-
+        fig = tab5_stem_pop(x_values, y_values, y_label, chart_title)
         return fig
