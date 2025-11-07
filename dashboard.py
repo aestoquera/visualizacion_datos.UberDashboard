@@ -2,6 +2,7 @@
 # Punto de entrada principal de la aplicación Dash.
 
 from dash import Dash
+from dash import dcc
 import dash_bootstrap_components as dbc
 
 # Importar el layout y la función de registro de callbacks

@@ -9,6 +9,56 @@ import pandas as pd
 # Importar variables pre-calculadas del módulo de datos
 from data import data, pickup_markers, center_lat, center_lon
 
+
+def render_tag(tag, value):
+    """
+    Convierte una entrada de diccionario en componente Dash HTML.
+    """
+    if tag.lower() == "br":
+        return html.Br()
+
+    if tag.lower() == "b":
+        return html.B(value)
+
+    if tag.lower() == "p":
+        return html.P(value)
+
+    if tag.lower() == "ul":
+        # Value debe ser lista
+        return html.Ul([html.Li(item) for item in value])
+
+    if tag.lower() == "li":
+        return html.Li(value)
+
+    # fallback genérico
+    return html.Div(value)
+
+
+def InfoIcon(id_prefix, content_dict):
+    """
+    Recibe un diccionario { "tag": valor } y construye el tooltip.
+    """
+    children = []
+
+    for tag, val in content_dict.items():
+        # Si es lista (por ejemplo ul con ítems),
+        # ya se procesa dentro de render_tag
+        children.append(render_tag(tag, val))
+
+    return html.Span(
+        [
+            html.Span("ℹ️", id=f"{id_prefix}-icon", style={"cursor": "pointer"}),
+            dbc.Tooltip(
+                children=html.Div(children),
+                target=f"{id_prefix}-icon",
+                id=f"{id_prefix}-tooltip",
+                placement="top",
+                className="tooltip-multiline",
+            ),
+        ],
+        style={"fontSize": "28px"}
+    )
+
 # ----------------------------------------------------------------------
 # --- CONTENIDO DE LAS PESTAÑAS ---
 # ----------------------------------------------------------------------
@@ -35,6 +85,24 @@ viajes_content = html.Div(
                             [
                                 dbc.Row(
                                     [
+                                        # icono de info
+                                        dbc.Col(
+                                            InfoIcon(
+                                                id_prefix="tab1-info",
+                                                content_dict={
+                                                    "b": "🗺️ Información geográfica de los viajes",
+                                                    "ul": [
+                                                        "Usa el botón para ver las salidas o llegadas de los viajes.",
+                                                        "Haz clic sobre un coche para ver un viaje individual.",
+                                                        "Una vez has aislado un viaje, vuelve a hacer click en cualquier coche para ver información detallada del viaje",
+                                                        "Elige una hora de inicio y final para ver todos los viajes hechos en esa hora y hacer que los gráficos reaccionen",
+                                                        "Muévete por el mapa para que los gráficos de la derecha reaccionen a lo que se ve en el mapa."
+                                                    ]
+                                                }
+                                            ),
+                                            width=1,
+                                            className="d-flex align-items-center"
+                                        ),
 
                                         # Columna para el Botón (Aproximadamente 4 unidades de ancho)
                                         dbc.Col(
@@ -103,7 +171,7 @@ viajes_content = html.Div(
                                                     # html.Div(html.Small(f"Fecha fija: {min_date_str}", className="text-muted"), className="mt-1")
                                                 ]
                                             ),
-                                            width=8,
+                                            width=7,
                                         ),
                                     ],
                                     className="g-3 align-items-end", 
@@ -125,7 +193,7 @@ viajes_content = html.Div(
                                             center=[center_lat, center_lon],
                                             zoom=13,
                                             children=[html.Div(id="map-tiles"),],
-                                            style={"width": "100%", "flex": "1", "max-height":"350px"}, 
+                                            style={"width": "100%", "flex": "1", "max-height":"550px"}, 
 
                                         ),
                                         # Convertimos este Div en un contenedor flex para que el mapa crezca
@@ -172,7 +240,7 @@ viajes_content = html.Div(
                                         ),
                                         dcc.Graph(
                                             id="analysis-graph",
-                                            style={"width": "100%", "flex": "1", "max-height":"350px"}, 
+                                            style={"width": "100%", "flex": "1", "max-height":"550px"}, 
                                         ),
                                     ],
                                     className="p-3 d-flex flex-column",
@@ -192,7 +260,7 @@ viajes_content = html.Div(
         ),
     ],
     # Contenedor principal. Fija la altura y se convierte en contenedor flex vertical.
-    style={"height": "75vh", "max-height":"75vh"},
+    style={"height": "80vh", "max-height":"85vh"},
     className="p-4 d-flex flex-column",
 )
 
@@ -232,7 +300,26 @@ distritos_content = html.Div(
                         dbc.Card(
                             [
                                 dbc.CardHeader(
-                                    "Control de Métrica",
+                                    dbc.Row(
+                                        [
+                                            # dbc.Col(
+                                            #     InfoIcon(
+                                            #         id_prefix="tab1-info",
+                                            #         content_dict={
+                                            #             "b": "🏢 Información agrupada por distritos",
+                                            #             "p": "Observa el tiempo y distancia requeridos para ir de un distrito a otro"
+                                            #         }
+                                            #     ),
+                                            #     width="auto",
+                                            #     className="d-flex align-items-center"
+                                            # ),
+                                            dbc.Col(
+                                                "Control de Métrica",
+                                                className="d-flex align-items-center"
+                                            ),
+                                        ],
+                                        className="g-2"
+                                    ),
                                     className="fw-bold bg-dark text-light",
                                 ),
                                 dbc.CardBody(
@@ -276,7 +363,7 @@ distritos_content = html.Div(
         )
     ],
     className="p-4 d-flex flex-column",
-    style={"height": "75vh"} 
+    style={"height": "85vh"} 
 )
 
 # ----------------------------------------------------------------------
@@ -305,11 +392,11 @@ pagos_content = html.Div(
                                     ),
                                     # 'd-flex flex-column' permite que el div interno crezca
                                     className="p-3 d-flex flex-column",
-                                    style={"max-height": "400px"}, 
                                 ),
                             ],
                             # h-100 para que la Card ocupe el 100% de la altura de la Columna
                             className="shadow-lg border-light h-100 d-flex flex-column",
+                            #style={"height": "80vh"} 
                         )
                     ],
                     width=8,  # Ocupa 2/3 del ancho
@@ -333,11 +420,11 @@ pagos_content = html.Div(
                                         responsive=True # Ayuda a que Plotly.js se ajuste al nuevo tamaño
                                     ),
                                     # CardBody sin padding (p-0) debe ser un contenedor flex
-                                    className="p-0 d-flex flex-column mb-4",
+                                    className="p-3 d-flex flex-column",
                                 ),
                             ],
                             # La Card debe ser y 'd-flex flex-column' para que CardBody pueda crecer
-                            className="shadow-lg border-light d-flex flex-column",
+                            className="shadow-lg border-light h-100 d-flex flex-column",
                         )
                     ],
                     width=4,  # Ocupa 1/3 del ancho
@@ -351,7 +438,7 @@ pagos_content = html.Div(
     ],
     # El Div principal establece la altura total (75vh) y es el contenedor Flexbox raíz
     className="p-4 d-flex flex-column",
-    style={"height": "100vh"} 
+    style={"height": "80vh"} 
 )
 
 # --- LAYOUT DE LA PESTAÑA DE EVOLUCIÓN ---
@@ -402,7 +489,7 @@ evolucion_content = html.Div(
         )
     ],
     className="p-4 d-flex flex-column", # El Div principal es un contenedor flex vertical
-    style={"height": "75vh"} 
+    style={"height": "85vh"} 
 )
 # ----------------------------------------------------------------------
 # --- LAYOUT EMISIONES CARBONO ---
@@ -527,7 +614,7 @@ emisiones_de_carbono_content = html.Div(
         )
     ],
     # Altura total limitada a 75vh y convertido en contenedor flex vertical
-    style={"height": "75vh"},
+    style={"height": "85vh"},
     className="p-4 d-flex flex-column",
 )
 # ----------------------------------------------------------------------
@@ -541,7 +628,8 @@ app_layout = dbc.Container(
         dcc.Store(id="filtered-data-store", data=[]),
         # Fila 1: Título y Pestañas
         dbc.Row(
-            className="mb-2 mt-2 align-items-end",
+            className="mb-2 mt-2 align-items-center",
+            style={"height": "5vh", "maxHeight": "10vh"},
             children=[
                 # Título a la izquierda
                 dbc.Col(

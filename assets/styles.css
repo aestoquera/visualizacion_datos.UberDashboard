@@ -140,3 +140,12 @@
     background-color: #444 !important;
     border-color: #555 !important;
 }
+
+.tooltip-multiline .tooltip-inner {
+    width: 350px;
+    max-width: 550px;
+    height: auto;
+    white-space: normal;
+    text-align: left;
+    word-break: break-word;
+}

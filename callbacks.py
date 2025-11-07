@@ -177,7 +177,7 @@ def register_callbacks(app):
             info = html.Div(
                 [
                     html.P(
-                        f"Viajes tras hora: {total_after_date}", className="mb-0 small"
+                        f"Viajes realizados en esta hora: {total_after_date}", className="mb-0 small"
                     ),
                     html.P(
                         "No hay viajes en el intervalo horario seleccionado.",
@@ -338,7 +338,7 @@ def register_callbacks(app):
                 new_filtered = [sel]
                 info = html.Div(
                     [
-                        html.P(f"Viajes tras hora: 1", className="mb-0 small"),
+                        html.P(f"Viajes realizados en esta hora: 1", className="mb-0 small"),
                         html.P(
                             f"Viajes visibles (por bounds): 1", className="mb-0 small"
                         ),
@@ -375,7 +375,7 @@ def register_callbacks(app):
                 info = html.Div(
                     [
                         html.P(
-                            f"Viajes tras hora: {total_after_date}",
+                            f"Viajes realizados en esta hora: {total_after_date}",
                             className="mb-0 small",
                         ),
                         html.P(
@@ -574,7 +574,7 @@ def register_callbacks(app):
 
         info = html.Div(
             [
-                html.P(f"Viajes tras hora: {total_after_date}", className="mb-0 small"),
+                html.P(f"Viajes realizados en esta hora: {total_after_date}", className="mb-0 small"),
                 html.P(
                     f"Viajes visibles (por bounds): {len(saved)}",
                     className="mb-0 small",
