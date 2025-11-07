@@ -1,9 +1,45 @@
 import plotly.express as px
 import plotly.graph_objs as go
+# Colores globales
+CONTRAST_COLOR = "#1fbad6"
+TEXT_COLOR = "#c0c0c8"
+
+# Estilo Plotly minimalista, fondo transparente, template tipo dark
 plotly_style = {
-            "template": "plotly_dark",
-            "margin": dict(t=50, l=25, r=25, b=25),
-        }
+    "template": "plotly_dark",
+    "margin": dict(t=50, l=25, r=25, b=25),
+    "paper_bgcolor": "rgba(0,0,0,0)",
+    "plot_bgcolor": "rgba(0,0,0,0)",
+    "font": {
+        "color": TEXT_COLOR,
+        "family": "Inter, Roboto, 'Segoe UI', Arial, sans-serif",
+        "size": 12,
+    },
+    "colorway": [CONTRAST_COLOR, "#6c757d", "#9ad0f5", "#f1c40f", "#e74c3c"],
+    "legend": {"bgcolor": "rgba(0,0,0,0)", "borderwidth": 0, "orientation": "h"},
+    "xaxis": {
+        "showgrid": False,
+        "zeroline": False,
+        "showline": False,
+        "tickfont": {"color": TEXT_COLOR},
+        "titlefont": {"color": TEXT_COLOR},
+    },
+    "yaxis": {
+        "showgrid": False,
+        "zeroline": False,
+        "showline": False,
+        "tickfont": {"color": TEXT_COLOR},
+        "titlefont": {"color": TEXT_COLOR},
+    },
+    "hoverlabel": {
+        "font": {
+            "color": TEXT_COLOR,
+            "family": "Inter, Roboto, 'Segoe UI', Arial, sans-serif",
+        },
+        "bgcolor": "rgba(0,0,0,0.6)",
+    },
+}
+
 # Tab 1
 # Graficos a la izquierda del mapa
 def tab1_violin_plot(filtered_data, num_trips):
@@ -100,8 +136,7 @@ def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_te
             x=-df_pickup["avg_time"],
             name="Tiempo Salida (min)",
             orientation="h",
-            marker_color="#20C997",
-            showlegend=True,
+            marker_color="#20C997"
         ),
         row=1, col=1,
     )
@@ -111,8 +146,7 @@ def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_te
             x=df_pickup["avg_distance"],
             name="Distancia Salida (km)",
             orientation="h",
-            marker_color="#F1C40F",
-            showlegend=True,
+            marker_color="#F1C40F"
         ),
         row=1, col=1,
     )
@@ -124,8 +158,7 @@ def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_te
             x=-df_dropoff["avg_time"],
             name="Tiempo Llegada (min)",
             orientation="h",
-            marker_color="#20C997",
-            showlegend=False,
+            marker_color="#20C997"
         ),
         row=1, col=2,
     )
@@ -135,8 +168,7 @@ def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_te
             x=df_dropoff["avg_distance"],
             name="Distancia Llegada (km)",
             orientation="h",
-            marker_color="#F1C40F",
-            showlegend=False,
+            marker_color="#F1C40F"
         ),
         row=1, col=2,
     )
@@ -145,10 +177,10 @@ def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_te
     fig.update_layout(
         barmode="overlay",
         title=header_text,
-        legend=dict(
-            x=0.5, y=1.1, xanchor="center",
-            orientation="h", bgcolor="rgba(255,255,255,0)"
-        ),
+        # legend=dict(
+        #     x=0.5, y=1.1, xanchor="center",
+        #     orientation="h", bgcolor="rgba(255,255,255,0)"
+        # ),
         **plotly_style,
     )
 
@@ -215,8 +247,6 @@ def tab3_sankey_flujo(labels, sources, targets, values):
     fig.update_layout(
         title_text="Flujo de Dinero: Desde Cobros hasta Ganancia Neta",
         font_color="white",
-        paper_bgcolor="#222222",
-        plot_bgcolor="#222222",
         **plotly_style,
     )
     return fig
@@ -286,10 +316,6 @@ def tab5_stem_pop(x_values, y_values, y_label, chart_title):
         title=chart_title,
         xaxis_title="Hora del Día (0-23)",
         yaxis_title=y_label,
-        xaxis=dict(
-            tickmode="array",
-            tickvals=list(range(24)),
-        ),
         **plotly_style,
     )
 
