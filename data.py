@@ -12,7 +12,7 @@ try:
     print("Datos leidos!")
     data["tpep_pickup_datetime"] = pd.to_datetime(data["tpep_pickup_datetime"])
     data["tpep_dropoff_datetime"] = pd.to_datetime(data["tpep_dropoff_datetime"])
-    data = data.sample(1_000)
+    #data = data.sample(1_000)
     print("Datos listos!")
 except FileNotFoundError:
     print("Error: El archivo 'uber_dataset_procesado.csv' no se encontró.")

@@ -536,7 +536,7 @@ emisiones_de_carbono_content = html.Div(
                                                     id="metric-radio",
                                                     options=[
                                                         {"label": "CO₂ total por viaje", "value": "co2_kg_trip"},
-                                                        {"label": "CO₂ por km (kg/km)", "value": "co2_kg_per_km"},
+                                                        #{"label": "CO₂ por km (kg/km)", "value": "co2_kg_per_km"},
                                                         {"label": "CO₂ por pasajero (kg/pax)", "value": "co2_kg_per_passenger"},
                                                     ],
                                                     value="co2_kg_trip",

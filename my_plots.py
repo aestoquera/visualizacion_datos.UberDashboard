@@ -438,29 +438,158 @@ def tab3_sankey_flujo(labels, sources, targets, values):
 
 # Tab 4
 def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
-    """Barra por hora."""
+    """
+    Barra por hora con preatención monocromática, transparencia y anotación.
+    """
+    
+    # Asegurarse de que hourly es un DataFrame
+    if not isinstance(hourly, pd.DataFrame):
+        hourly = pd.DataFrame(hourly)
+
+    # --- 1. Preparación de Preatención Monocromática ---
+    
+    # Definición de colores
+    try:
+        highlight_color = CONTRAST_COLOR
+        base_color = "#434268" 
+    except NameError:
+        highlight_color = '#5a9ce7' # Default
+        base_color = "#4274a0"     # Default
+
+    # Encontrar el valor máximo de la métrica y su índice
+    max_val = hourly[y_vals].max()
+
+    # Crear la columna de color: asigna el color base a todas las filas
+    hourly['color_category'] = base_color
+    
+    # Asigna el color de contraste a la fila con el valor máximo
+    hourly.loc[hourly[y_vals] == max_val, 'color_category'] = highlight_color
+    
+    # --- 2. Creación del Gráfico (con Plotly Express) ---
+
     total = hourly["count"].sum()
+    
+    # Usamos 'color_category' para asignar los colores individuales
     fig = px.bar(
         hourly,
         x="pickup_hour",
         y=y_vals,
+        color='color_category', # Usamos la columna calculada para el color
+        color_discrete_map={base_color: base_color, highlight_color: highlight_color}, # Mapeo para asegurar los colores
         labels={"pickup_hour": "Hora (0-23)", y_vals: y_label},
-        title=f"{title_map.get(metric_col, metric_col)} ({total} viajes en el filtro)",
-        hover_data={"pickup_hour": True, y_vals: True, "count": True},
+        title=f"<b>{title_map.get(metric_col, metric_col)}</b> por Hora ({total:,.0f} viajes en el filtro)",
+        hover_data={"pickup_hour": True, y_vals: ':.2f', "count": True},
     )
-    fig.update_layout(**plotly_style)
+
+    # --- 3. Aplicación de Conceptos de Visualización Avanzada (go.Figure) ---
+
+    # Aplicar transparencia (Opacidad) a todas las barras
+    fig.update_traces(opacity=0.7)
+    
+    # Mejorar la estética del hover (se hereda de plotly_style, pero lo aseguramos)
+    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}<br>Viajes: %{{customdata[1]:,.0f}}<extra></extra>")
+    
+    # Ocultar la leyenda de colores, ya que es redundante (solo tenemos dos colores: base y max)
+    fig.update_layout(showlegend=False)
+
+    # --- 4. Anotación de Etiqueta de Datos (Refuerzo Preatentivo) ---
+
+    # Encontrar la hora correspondiente al máximo
+    max_hour = hourly.loc[hourly[y_vals] == max_val, "pickup_hour"].iloc[0]
+    
+    # Añadir una anotación de texto encima de la barra máxima
+    fig.add_annotation(
+        x=max_hour,
+        y=max_val,
+        text=f"<b>Pico:</b><br>{max_val:,.0f}",
+        showarrow=True,
+        arrowhead=7, # Estilo de flecha simple y limpio
+        arrowcolor=highlight_color,
+        arrowwidth=1.5,
+        ax=0,   # Posición horizontal de la cola (centrado)
+        ay=-30, # Desplazamiento vertical del texto (30px sobre la punta de la flecha)
+        font=dict(size=14, color=highlight_color),
+        bordercolor=highlight_color,
+        borderwidth=1,
+        borderpad=4,
+        bgcolor="rgba(0,0,0,0.8)" # Fondo oscuro para resaltar
+    )
+
+    # --- 5. Layout Final ---
+    fig.update_layout(
+        xaxis_title="Hora del Día (0-23)",
+        yaxis_title=y_label,
+        **plotly_style,
+    )
+    
+    # Asegurar el color del título del gráfico
+    fig.update_layout(title=dict(text=fig.layout.title.text, font=dict(color=TEXT_COLOR)))
+
     return fig
 
 def tab4_co2_treemap(treemap_df):
-    """Treemap CO₂ por borough."""
+    """
+    Treemap CO₂ por borough con estética moderna, minimalista y legible.
+    """
+    
+    # 1. Cálculo de métricas y ruta jerárquica
+    total_co2_kg = treemap_df["co2_kg_sum"].sum()
+
+    # Definición de la escala de color moderna y de contraste
+    color_scale = [
+        "#00123a",  # Fondo bajo (dark matte)
+        "#7bb9ff",  # Contraste/acento
+    ]
+
+    # 2. Construcción del treemap
     fig = px.treemap(
         treemap_df,
-        path=["pickup_borough"],
+        # Añadimos la raíz con el total para un contexto jerárquico claro
+        path=[
+            px.Constant(f"Total CO₂: {total_co2_kg:,.0f} kg"),
+            "pickup_borough",
+        ],
         values="co2_kg_sum",
-        title="Contribución de CO₂ por Borough (kg total)",
+        color="co2_kg_sum",  # Colorear por la misma métrica (CO2)
+        color_continuous_scale=color_scale,
+        title=f"<b>Emisiones de CO₂ por Borough</b><br><sup>Total: {total_co2_kg:,.0f} kg de CO₂</sup>",
         hover_data={"co2_kg_sum": True},
     )
-    fig.update_layout(**plotly_style)
+
+    # 3. Estilo visual minimalista y legible
+    fig.update_traces(
+        # Formato de texto: Etiqueta (Borough) y valor (CO2), con formato de miles
+        texttemplate="<b>%{label}</b><br>%{value:,.0f} kg",
+        hovertemplate="<b>%{label}</b><br>CO₂ emitido: %{value:,.0f} kg<extra></extra>",
+        marker=dict(
+            line=dict(width=0)  # Sin bordes (look moderno y limpio)
+        ),
+        root_color="rgba(0,0,0,0)"  # Fondo transparente para el root
+    )
+
+    # 4. Layout global (usando tu style dict)
+    fig.update_layout(
+        **plotly_style,
+        showlegend=False,
+        # Ajuste del título para centrado relativo y fuente
+        title=dict(
+            font=dict(size=20, family=plotly_style.get("font", {}).get("family", "Inter, Roboto"), color=TEXT_COLOR),
+            x=0.18,  # Ajuste para centrado visual en el dashboard
+            y=0.95,
+        ),
+        # Ajuste de la barra de color
+        coloraxis_colorbar=dict(
+            title="CO₂ (kg)",
+            thickness=14,
+            outlinewidth=0,
+            tickfont=dict(size=12, color=TEXT_COLOR),
+        ),
+        transition=dict(duration=250, easing="cubic-in-out"),
+        autosize=True,
+        uniformtext_minsize=12,
+        uniformtext_mode="hide"
+    )
+
     return fig
 
 # Tab 5

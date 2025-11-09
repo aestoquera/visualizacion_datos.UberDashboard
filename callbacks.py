@@ -1216,7 +1216,7 @@ def register_callbacks(app):
         df['hour'] = df['tpep_pickup_datetime'].dt.hour
         
         # Agrupar por hora y sumar la métrica seleccionada
-        df_grouped = df.groupby('hour')[selected_metric].sum().reset_index()
+        df_grouped = df.groupby('hour', observed=False)[selected_metric].sum().reset_index()
 
         # (Paso 3: Definir etiquetas para el gráfico)
         metric_labels = {
