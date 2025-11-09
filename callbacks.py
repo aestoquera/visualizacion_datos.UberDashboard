@@ -13,7 +13,7 @@ from dash import html, dcc
 import json
 
 # Importar variables de datos y layout
-from data import data, pickup_markers, dropoff_markers, green_icon, red_icon, ICON_MAP
+from data import data, green_icon, red_icon, ICON_MAP
 from layout import (
     viajes_content,
     distritos_content,

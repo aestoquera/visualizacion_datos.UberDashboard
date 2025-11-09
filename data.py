@@ -12,7 +12,7 @@ try:
     print("Datos leidos!")
     data["tpep_pickup_datetime"] = pd.to_datetime(data["tpep_pickup_datetime"])
     data["tpep_dropoff_datetime"] = pd.to_datetime(data["tpep_dropoff_datetime"])
-    data = data.sample(3_000)
+    data = data.sample(1_000)
     print("Datos listos!")
 except FileNotFoundError:
     print("Error: El archivo 'uber_dataset_procesado.csv' no se encontró.")
@@ -38,7 +38,7 @@ ICON_MAP = {
     "Cash": "/assets/cash.png",
     "No charge": "/assets/no_charge.png",
     "Dispute": "/assets/dispute.png",
-    "Otros": "/assets/unknown.png",  # Asumimos un ícono para 'Otros'
+    "Otros": "/assets/unknown.png", 
 }
 
 # --- Marcadores ---
@@ -56,29 +56,6 @@ if not data.empty:
                 html.P(f"🛣️ Distancia: {row['trip_distance_km']:.2f} km"),
             ],
             className="text-secondary",
-        )
-
-        pickup_markers.append(
-            dl.Marker(
-                position=(row["pickup_latitude"], row["pickup_longitude"]),
-                icon=green_icon,
-                children=[
-                    dl.Tooltip("Salida", className="fw-bold"),
-                    dl.Popup(popup_content),
-                ],
-                id={"type": "pickup_marker", "index": i},
-            )
-        )
-        dropoff_markers.append(
-            dl.Marker(
-                position=(row["dropoff_latitude"], row["dropoff_longitude"]),
-                icon=red_icon,
-                children=[
-                    dl.Tooltip("Llegada", className="fw-bold"),
-                    dl.Popup(popup_content),
-                ],
-                id={"type": "dropoff_marker", "index": i},
-            )
         )
 
 # --- Centro del mapa ---

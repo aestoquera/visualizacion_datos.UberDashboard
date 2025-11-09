@@ -1,7 +1,7 @@
 import plotly.express as px
 import plotly.graph_objs as go
 # Colores globales
-CONTRAST_COLOR = "#1fbad6"
+CONTRAST_COLOR = "#5a9ce7"
 TEXT_COLOR = "#c0c0c8"
 
 # Estilo Plotly minimalista, fondo transparente, template tipo dark
@@ -31,13 +31,20 @@ plotly_style = {
         "tickfont": {"color": TEXT_COLOR},
         "titlefont": {"color": TEXT_COLOR},
     },
-    "hoverlabel": {
-        "font": {
-            "color": TEXT_COLOR,
-            "family": "Inter, Roboto, 'Segoe UI', Arial, sans-serif",
-        },
-        "bgcolor": "rgba(0,0,0,0.6)",
-    },
+    # "hoverlabel": {
+    #     "font": {
+    #         "color": TEXT_COLOR,
+    #         "family": "Inter, Roboto, 'Segoe UI', Arial, sans-serif",
+    #     },
+    #     "bgcolor": "rgba(0,0,0,0.6)",
+    # },
+    "hoverlabel":{
+        
+            "bgcolor":"rgba(0,0,0,0.7)",
+            "font_size":12,
+            "font_family":"Inter"
+    }
+    
 }
 
 # Tab 1
@@ -50,16 +57,31 @@ def stylize_violin(fig, data, column_name, ylabel):
     vmin, vmax = vals.min(), vals.max()
     median = np.median(vals)
 
-    # --- Desactivar hover feo
-    fig.update_traces(hoverinfo="skip", hovertemplate=None)
+    # Hover limpio modern UI
+    fig.update_traces(
+        hovertemplate="<span style='font-size:13px'><b>%{y:.2f}</b> " + ylabel + "</span><extra></extra>",
+        line=dict(width=1.2, color=CONTRAST_COLOR),
+        hoveron="violins",
+        opacity=0.92
+    )
 
-    # --- Estilos globales
-    fig.update_layout(**plotly_style)
-    fig.update_yaxes(title=ylabel)
 
-    # --- Cajas flotantes
-    x_pos = -0.2
-    spacing = 5
+    # Layout global brand-driven
+    fig.update_layout(
+        **plotly_style,
+        title=dict(
+            font=dict(size=20, family="Inter, Roboto", color=TEXT_COLOR),
+            x=0.18,
+            y=0.95,
+        ),
+        yaxis_title=ylabel,
+        transition=dict(duration=250, easing="cubic-in-out"),
+        violinmode="overlay",
+    )
+
+    # Caja flotante UI-chip style
+    x_pos = -0.25
+    spacing = (vmax - vmin) * 0.055
 
     def add_box(label, y):
         fig.add_annotation(
@@ -68,77 +90,105 @@ def stylize_violin(fig, data, column_name, ylabel):
             text=label,
             showarrow=False,
             xanchor="right",
-            font=dict(color=TEXT_COLOR, size=10),
+            font=dict(color=TEXT_COLOR, size=11, family="Inter"),
             align="center",
-            bgcolor="rgba(31,186,214,0.12)",
+            bgcolor="rgba(31,186,214,0.11)",
             bordercolor=CONTRAST_COLOR,
             borderwidth=1,
             borderpad=6,
-            opacity=0.93,
+            opacity=0.95,
+            yanchor="middle"
         )
+    fig.update_layout(hovermode=False)
 
     add_box(f"Min: {vmin:.1f}", vmin)
     add_box(f"Q1: {q1:.1f}", q1 + spacing)
-    add_box(f"Q2: {median:.1f}", median + spacing * 2)
+    add_box(f"Mediana: {median:.1f}", median + spacing * 2)
     add_box(f"Q3: {q3:.1f}", q3 + spacing * 3)
     add_box(f"Max: {vmax:.1f}", vmax + spacing)
 
-    return fig
+    # Etiqueta responsiva
+    fig.update_layout(uniformtext_minsize=12, uniformtext_mode="hide")
 
+    return fig
 def tab1_violin_plot(filtered_data, num_trips):
     fig = px.violin(
         filtered_data,
         y="trip_minutes",
         box=True,
         points=None,
-        title=f"Distribución del Tiempo de Viaje ({num_trips} viajes)",
+        title=f"<b>Distribución del Tiempo de Viaje</b><br><sup>{num_trips:,} viajes analizados</sup>",
         color_discrete_sequence=[CONTRAST_COLOR],
     )
-
     fig = stylize_violin(fig, filtered_data, "trip_minutes", "Minutos de Viaje")
     return fig
-
-
 def tab1_violin_distancia(filtered_data, num_trips):
     fig = px.violin(
         filtered_data,
         y="trip_distance_km",
         box=True,
         points=None,
-        title=f"Distribución de la Distancia de Viaje ({num_trips} viajes)",
+        title=f"<b>Distribución de la Distancia de Viaje</b><br><sup>{num_trips:,} viajes analizados</sup>",
         color_discrete_sequence=[CONTRAST_COLOR],
     )
-
     fig = stylize_violin(fig, filtered_data, "trip_distance_km", "Distancia (km)")
     return fig
 
 
 def tab1_treemap_pasajeros(passenger_counts, num_trips):
     """
-    Genera un treemap con la frecuencia de viajes por número de pasajeros.
-
-    Args:
-        passenger_counts (pd.DataFrame): DataFrame con columnas:
-            - 'passenger_count_str'
-            - 'frequency'
-        num_trips (int): Total de viajes para el título.
-
-    Returns:
-        plotly.graph_objects.Figure: Figura lista para renderizar.
+    Genera un treemap con estética moderna y minimalista (brand-driven)
     """
 
     # Construcción del treemap
     fig = px.treemap(
         passenger_counts,
-        path=[px.Constant(f"{num_trips} Viajes"), "passenger_count_str"],
+        path=[
+            px.Constant(f"Total: {num_trips:,} Viajes"),
+            "passenger_count_str",
+        ],
         values="frequency",
-        title=f"Frecuencia por Nº de Pasajeros ({num_trips} viajes)",
         color="frequency",
-        color_continuous_scale="Blues",
+        color_continuous_scale=[
+            "#00123a",  # fondo bajo (dark matte)
+            "#7bb9ff",  # contraste/acento
+        ],
+        title=f"<b>Frecuencia por Nº de Pasajeros</b><br><sup>{num_trips:,} viajes analizados</sup>",
     )
 
-    # Aplicar estilos globales
-    fig.update_layout(**plotly_style)
+    # Estilo visual minimalista
+    fig.update_traces(
+        texttemplate="<b>%{label}</b><br>%{value:,}",
+        hovertemplate="<b>%{label}</b><br>Viajes: %{value:,}<extra></extra>",
+        textfont=dict(size=14, family="Inter, Roboto"),
+        marker=dict(
+            line=dict(width=0)  # sin bordes para look más moderno
+        ),
+        root_color="rgba(0,0,0,0)"  # fondo transparente para el root
+    )
+
+    # Layout global (usando tu style dict)
+    fig.update_layout(
+        **plotly_style,
+        title=dict(
+            font=dict(size=20, family="Inter, Roboto", color=TEXT_COLOR),
+            x=0.18,  # centrado relativo (moderno)
+            y=0.95,
+        ),
+        coloraxis_colorbar=dict(
+            thickness=14,
+            outlinewidth=0,
+            tickfont=dict(size=12, color=TEXT_COLOR),
+        ),
+        transition=dict(duration=250, easing="cubic-in-out"),
+    )
+
+    # Responsividad
+    fig.update_layout(
+        autosize=True,
+        uniformtext_minsize=12,
+        uniformtext_mode="hide"
+    )
 
     return fig
 
