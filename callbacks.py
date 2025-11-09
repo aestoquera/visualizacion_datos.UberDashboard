@@ -907,6 +907,8 @@ def register_callbacks(app):
             total_icons_for_this_bin = proportional_heights.loc[bin_label]
             row_data_pct = df_norm.loc[bin_label]
 
+            total_trips = bin_counts.loc[bin_label]
+
             counts = (row_data_pct * total_icons_for_this_bin).fillna(0)
             num_blocks_floor = counts.apply(lambda x: int(x))
             remainders = counts - num_blocks_floor
@@ -953,6 +955,13 @@ def register_callbacks(app):
             # 5. Crear la barra Waffle
             waffle_bar = html.Div(
                 [
+                    # NUEVO: Etiqueta superior con el número total de viajes
+                    # Se usa formateo con comas para miles (ej. 1,234)
+                    html.P(
+                        f"{int(total_trips):,} viajes", 
+                        className="waffle-label-top",
+                        style={"textAlign": "center", "fontWeight": "bold", "marginBottom": "4px"}
+                    ),
                     html.Div(blocks, className="waffle-grid-bar"),
                     html.P(html.B(bin_label), className="waffle-label-bottom"),
                 ],

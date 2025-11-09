@@ -259,7 +259,6 @@ def tab2_radar_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_tex
     )
 
     # --- 1. Calcular Rangos Separados ---
-    # Es crucial tener rangos separados para distancia y tiempo
     max_dist = max(df_pickup["avg_distance"].max(), df_dropoff["avg_distance"].max()) * 1.15
     max_time = max(df_pickup["avg_time"].max(), df_dropoff["avg_time"].max()) * 1.15
 
@@ -277,7 +276,6 @@ def tab2_radar_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_tex
     r_dropoff_dist = df_dropoff["avg_distance"].tolist() + [df_dropoff["avg_distance"].iloc[0]]
 
     # --- 3. Definir Colores y Rellenos ---
-    # (Ya definidos arriba, pero los re-asigno para claridad de la función)
     COLOR_SALIDA = "#5DADE2"  # Azul
     COLOR_LLEGADA = "#8E44AD" # Morado
     
@@ -285,7 +283,6 @@ def tab2_radar_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_tex
     FILL_LLEGADA = "rgba(142, 68, 173, 0.4)" # Morado 40%
 
     # --- 4. Añadir Trazados (Traces) ---
-
     # --- Gráfico 1: Distancias ---
     
     # Salida (Distancia)
@@ -355,41 +352,86 @@ def tab2_radar_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_tex
 
     return fig
 # Tab 3
+import copy
 def tab3_sankey_flujo(labels, sources, targets, values):
-    
     """Sankey flujo financiero."""
-    link_colors = [
-            "green",  # fare
-            "yellow",  # extra
-            "yellow",  # tip
-            "red",  # tolls
-            "red",  # surcharge
-            "green",  # profit
+    
+    # Paleta de colores más estética (formato RGBA)
+    # Asumiendo el orden: fare, extra, tip, tolls, surcharge, profit
+    link_colors_rgba = [
+        "#0b4d19",   # Ingreso principal (Verde)
+        "#7e7500",  # Ingreso secundario (Dorado)
+        "#7e7500",  # Ingreso secundario (Dorado)
+        "#700000",   # Costo (Rojo suave)
+        "#700000",   # Costo (Rojo suave)
+        "#0b4d19",   # Ganancia (Verde más sólido)
     ]
+    
+    # Colores para los nodos y sus bordes
+    node_color = "#5D6D7E"
+    node_line_color = "#BDC3C7"
+
     fig = go.Figure(
         go.Sankey(
             arrangement="snap",
             node=dict(
                 pad=25,
                 thickness=20,
-                line=dict(color="black", width=0.5),
+                line=dict(color=node_line_color, width=0.5),
                 label=labels,
-                color="#343a40",
+                color=node_color,
+                # Hovertemplate mejorado para nodos
+                hovertemplate="<b>Nodo:</b> %{label}<br><b>Total Acumulado:</b> $%{value:,.2f}<extra></extra>"
             ),
             link=dict(
                 source=sources,
                 target=targets,
                 value=values,
-                color=link_colors,
-                hovertemplate="Flujo: %{value:,.2f} $<extra></extra>",
+                color=link_colors_rgba,
+                # Hovertemplate mejorado para flujos
+                hovertemplate="<b>De:</b> %{source.label}<br><b>A:</b> %{target.label}<br><b>Monto:</b> $%{value:,.2f}<extra></extra>"
             ),
         )
     )
-
+    plotly_style_2 = copy.deepcopy(plotly_style)
+    plotly_style_2["font"]["color"] = "#ffffff"
     fig.update_layout(
-        title_text="Flujo de Dinero: Desde Cobros hasta Ganancia Neta",
+        title_text="",
         font_color="white",
-        **plotly_style,
+        **plotly_style_2,
+        # Anotaciones para dar contexto a las columnas
+        annotations=[
+            dict(
+                text="INGRESOS",
+                x=0.05,
+                y=1.05,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=14, color="#cccccc"),
+                xanchor="left"
+            ),
+            dict(
+                text="COSTOS Y CARGOS",
+                x=0.5,
+                y=1.05,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=14, color="#cccccc"),
+                xanchor="center"
+            ),
+            dict(
+                text="RESULTADO NETO",
+                x=0.95,
+                y=1.05,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=14, color="#cccccc"),
+                xanchor="right"
+            )
+        ]
     )
     return fig
 
