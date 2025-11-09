@@ -766,7 +766,7 @@ def register_callbacks(app):
             )
             df_pickup = df_pickup.sort_values("borough")
             df_dropoff = df_dropoff.sort_values("borough")
-            fig = tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_text)
+            fig = tab2_radar_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_text)
             return fig, header_text
 
         # En caso de que se seleccione un valor no manejado

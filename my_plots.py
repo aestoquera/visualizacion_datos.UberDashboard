@@ -242,104 +242,118 @@ def tab1_heatmap_distritos(df_pivot, df_count, text_format, color_scale, metric_
 
 
 from plotly.subplots import make_subplots
+def tab2_radar_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_text):
+    """
+    Comparativa en telaraña:
+    Gráfico 1: Distancias (Salida vs Llegada)
+    Gráfico 2: Tiempos (Salida vs Llegada)
+    """
 
-def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_text):
-    """Comparativa pickup/dropoff tiempo/distancia."""
     fig = make_subplots(
         rows=1,
         cols=2,
-        subplot_titles=("Distritos de Salida (Pickup)", "Distritos de Llegada (Dropoff)"),
-        horizontal_spacing=0.05,
+        specs=[[{"type": "polar"}, {"type": "polar"}]],
+        # --- Nuevos Títulos ---
+        subplot_titles=("Comparativa de Distancias (km)", "Comparativa de Tiempos (min)"),
+        horizontal_spacing=0.1,
     )
 
-    # Rango simétrico global
-    max_val_pickup = max(df_pickup["avg_time"].max(), df_pickup["avg_distance"].max())
-    max_val_dropoff = max(df_dropoff["avg_time"].max(), df_dropoff["avg_distance"].max())
-    max_global = max(max_val_pickup, max_val_dropoff) * 1.1
+    # --- 1. Calcular Rangos Separados ---
+    # Es crucial tener rangos separados para distancia y tiempo
+    max_dist = max(df_pickup["avg_distance"].max(), df_dropoff["avg_distance"].max()) * 1.15
+    max_time = max(df_pickup["avg_time"].max(), df_dropoff["avg_time"].max()) * 1.15
 
-    # Pickup
-    fig.add_trace(
-        go.Bar(
-            y=df_pickup["borough"],
-            x=-df_pickup["avg_time"],
-            name="Tiempo Salida (min)",
-            orientation="h",
-            marker_color="#20C997"
-        ),
-        row=1, col=1,
-    )
-    fig.add_trace(
-        go.Bar(
-            y=df_pickup["borough"],
-            x=df_pickup["avg_distance"],
-            name="Distancia Salida (km)",
-            orientation="h",
-            marker_color="#F1C40F"
-        ),
-        row=1, col=1,
-    )
+    # --- 2. Preparar Datos para Radar ---
+    df_pickup = df_pickup.set_index('borough').loc[borough_order].reset_index()
+    df_dropoff = df_dropoff.set_index('borough').loc[borough_order].reset_index()
 
-    # Dropoff
-    fig.add_trace(
-        go.Bar(
-            y=df_dropoff["borough"],
-            x=-df_dropoff["avg_time"],
-            name="Tiempo Llegada (min)",
-            orientation="h",
-            marker_color="#20C997"
-        ),
-        row=1, col=2,
-    )
-    fig.add_trace(
-        go.Bar(
-            y=df_dropoff["borough"],
-            x=df_dropoff["avg_distance"],
-            name="Distancia Llegada (km)",
-            orientation="h",
-            marker_color="#F1C40F"
-        ),
-        row=1, col=2,
-    )
+    # Cerrar el bucle del radar
+    theta_labels = borough_order + [borough_order[0]]
 
-    # Layout
+    # Listas de datos
+    r_pickup_time = df_pickup["avg_time"].tolist() + [df_pickup["avg_time"].iloc[0]]
+    r_pickup_dist = df_pickup["avg_distance"].tolist() + [df_pickup["avg_distance"].iloc[0]]
+    r_dropoff_time = df_dropoff["avg_time"].tolist() + [df_dropoff["avg_time"].iloc[0]]
+    r_dropoff_dist = df_dropoff["avg_distance"].tolist() + [df_dropoff["avg_distance"].iloc[0]]
+
+    # --- 3. Definir Colores y Rellenos ---
+    # (Ya definidos arriba, pero los re-asigno para claridad de la función)
+    COLOR_SALIDA = "#5DADE2"  # Azul
+    COLOR_LLEGADA = "#8E44AD" # Morado
+    
+    FILL_SALIDA = "rgba(93, 173, 226, 0.4)"  # Azul 40%
+    FILL_LLEGADA = "rgba(142, 68, 173, 0.4)" # Morado 40%
+
+    # --- 4. Añadir Trazados (Traces) ---
+
+    # --- Gráfico 1: Distancias ---
+    
+    # Salida (Distancia)
+    fig.add_trace(go.Scatterpolar(
+        r=r_pickup_dist,
+        theta=theta_labels,
+        name="Salida",             # Para la leyenda
+        legendgroup="salida",     # Para agrupar leyendas
+        fill='toself',
+        fillcolor=FILL_SALIDA,
+        line=dict(color=COLOR_SALIDA, width=2.5),
+        hovertemplate='<b>Salida (Dist)</b><br>%{theta}: %{r:.1f} km<extra></extra>'
+    ), row=1, col=1)
+
+    # Llegada (Distancia)
+    fig.add_trace(go.Scatterpolar(
+        r=r_dropoff_dist,
+        theta=theta_labels,
+        name="Llegada",            # Para la leyenda
+        legendgroup="llegada",    # Para agrupar leyendas
+        fill='toself',
+        fillcolor=FILL_LLEGADA,
+        line=dict(color=COLOR_LLEGADA, width=2.5),
+        hovertemplate='<b>Llegada (Dist)</b><br>%{theta}: %{r:.1f} km<extra></extra>'
+    ), row=1, col=1)
+
+    # --- Gráfico 2: Tiempos ---
+
+    # Salida (Tiempo)
+    fig.add_trace(go.Scatterpolar(
+        r=r_pickup_time,
+        theta=theta_labels,
+        name="Salida",
+        legendgroup="salida",
+        showlegend=False,         # Ocultar leyenda duplicada
+        fill='toself',
+        fillcolor=FILL_SALIDA,
+        line=dict(color=COLOR_SALIDA, width=2.5),
+        hovertemplate='<b>Salida (Tiempo)</b><br>%{theta}: %{r:.1f} min<extra></extra>'
+    ), row=1, col=2)
+
+    # Llegada (Tiempo)
+    fig.add_trace(go.Scatterpolar(
+        r=r_dropoff_time,
+        theta=theta_labels,
+        name="Llegada",
+        legendgroup="llegada",
+        showlegend=False,         # Ocultar leyenda duplicada
+        fill='toself',
+        fillcolor=FILL_LLEGADA,
+        line=dict(color=COLOR_LLEGADA, width=2.5),
+        hovertemplate='<b>Llegada (Tiempo)</b><br>%{theta}: %{r:.1f} min<extra></extra>'
+    ), row=1, col=2)
+
+    # --- 5. Aplicar Layout y Estilo ---
     fig.update_layout(
-        barmode="overlay",
-        title=header_text,
-        # legend=dict(
-        #     x=0.5, y=1.1, xanchor="center",
-        #     orientation="h", bgcolor="rgba(255,255,255,0)"
-        # ),
-        **plotly_style,
+        title="",
+        **plotly_style,  # Aplicar el estilo modificado
+        
+        # Asignar los rangos radiales separados
+        polar1_radialaxis_range=[0, max_dist],
+        polar2_radialaxis_range=[0, max_time],
     )
 
-    # Ejes X simétricos
-    tickvals = [i for i in range(-int(max_global), int(max_global) + 1) if i != 0]
-    ticktext = [str(abs(i)) for i in tickvals]
-
-    for col in (1, 2):
-        fig.update_xaxes(
-            row=1, col=col,
-            range=[-max_global, max_global],
-            title_text="Tiempo Medio (min) <---- | ----> Distancia Media (km)",
-            tickvals=tickvals, ticktext=ticktext,
-        )
-
-    # Ejes Y
-    fig.update_yaxes(
-        row=1, col=1,
-        title_text="Distrito",
-        tickvals=borough_order,
-        ticktext=borough_order,
-        categoryorder="category ascending",
-    )
-    fig.update_yaxes(row=1, col=2, showticklabels=False)
-
-    # Línea central
-    fig.add_vline(x=0, line_width=1, line_dash="dash", line_color="#AAAAAA", row=1, col=1)
-    fig.add_vline(x=0, line_width=1, line_dash="dash", line_color="#AAAAAA", row=1, col=2)
+    # Ajustar la fuente de los títulos de los subplots
+    fig.update_annotations(font_size=16, y=1.05)
 
     return fig
-
 # Tab 3
 def tab3_sankey_flujo(labels, sources, targets, values):
     
