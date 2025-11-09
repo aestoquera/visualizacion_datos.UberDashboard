@@ -1,4 +1,5 @@
 import plotly.express as px
+import pandas as pd
 import plotly.graph_objs as go
 # Colores globales
 CONTRAST_COLOR = "#5a9ce7"
@@ -464,44 +465,132 @@ def tab4_co2_treemap(treemap_df):
 
 # Tab 5
 def tab5_stem_pop(x_values, y_values, y_label, chart_title):
-    """Stem & pop por hora."""
+    """
+    Stem & pop por hora con paleta monocromática, 
+    preatención en el máximo y anotación de flecha.
+    """
+
+    # --- 1. Preparación de Preatención ---
+    
+    # Asegurarnos de que trabajamos con Series de Pandas para usar idxmax
+    if not isinstance(y_values, pd.Series):
+         y_values = pd.Series(y_values)
+    if not isinstance(x_values, pd.Series):
+         # Alinear índices es crucial si y_values fue re-indexado
+         x_values = pd.Series(x_values, index=y_values.index) 
+
+    # Encontrar el valor máximo y su índice
+    max_val = y_values.max()
+    max_idx = y_values.idxmax()
+    max_x = x_values[max_idx]
+
+    # Crear listas de colores y tamaños para destacar el máximo
+    base_color = "#4a006d"  # Tu color base
+    highlight_color = CONTRAST_COLOR # El color de contraste principal
+
+    # Lista de colores: todos base menos el máximo
+    colors_list = [base_color] * len(x_values)
+    # CORRECCIÓN: Aplicar directamente el color al índice máximo
+    colors_list[max_idx] = highlight_color
+
+    # Lista de tamaños: el máximo será más grande
+    sizes_list = [10] * len(x_values)
+    # CORRECCIÓN: Aplicar directamente el tamaño al índice máximo
+    sizes_list[max_idx] = 16
+        
+    # Lista de anchos de línea: el máximo será más grueso
+    stem_width_list = [0.03] * len(x_values)
+    # CORRECCIÓN: Aplicar directamente el grosor al índice máximo
+    stem_width_list[max_idx] = 0.06
+
+
     fig = go.Figure()
 
-    # Palos
+    # --- 2. Trazado de Palos (Stems) ---
     fig.add_trace(go.Bar(
         x=x_values,
         y=y_values,
-        width=0.05,
+        width=stem_width_list, # Anchos variables
         name="Volumen",
         marker=dict(
-            color=y_values,
-            colorscale="Cividis",
-            showscale=True,
-            colorbar_title=y_label,
+            color=colors_list, # Aplicamos la lista de colores
         ),
+        hoverinfo="none" # Desactivamos hover para los palos
     ))
 
-    # Pops
+    # --- 3. Trazado de Pops (Markers) ---
     fig.add_trace(go.Scatter(
         x=x_values,
         y=y_values,
         mode="markers",
         name="Punto",
         marker=dict(
-            size=10,
-            color=y_values,
-            colorscale="Cividis",
-            showscale=False,
+            size=sizes_list,  # Aplicamos lista de tamaños
+            color=colors_list,  # Aplicamos lista de colores
+            line=dict(color='white', width=1) # Borde blanco para definir el círculo
         ),
+        # Hovertemplate mejorado para dar formato
+        hovertemplate=f"<b>Hora:</b> %{{x}}:00<br><b>{y_label}:</b> %{{y:,.0f}}<extra></extra>"
     ))
 
-    # Layout
+    # --- 4. Anotación de Flecha Curva ---
+    
+    # Lógica para la posición del texto (evitar que se salga de la pantalla)
+    if max_x > 18: # Si el pico está al final del eje X
+        ax_offset = -40 # Mover el texto a la izquierda
+        align = "right"
+    elif max_x < 4: # Si el pico está al principio
+        ax_offset = 40 # Mover el texto a la derecha
+        align = "left"
+    else: # Centrado
+        ax_offset = 40 # Mover el texto a la derecha por defecto
+        align = "left"
+
+    fig.add_annotation(
+        x=max_x,
+        y=max_val,
+        text=f"<b>Pico máximo:</b><br>{max_val:,.0f}", # Texto de la anotación
+        showarrow=True,
+        arrowhead=2,           # Estilo de flecha
+        arrowsize=1.2,
+        arrowwidth=2,
+        arrowcolor=highlight_color, # Color de la flecha
+        
+        ax=ax_offset,          # Desplazamiento X de la *cola* de la flecha (controla curvatura)
+        ay=-50,                # Desplazamiento Y de la *cola* (negativo = arriba)
+        
+        font=dict(size=13, color=highlight_color),
+        align=align,
+        bordercolor=highlight_color,
+        borderwidth=1.5,
+        borderpad=4,
+        bgcolor=plotly_style.get("plot_bgcolor", "rgba(0,0,0,0.7)"), # Fondo del plot
+        opacity=0.9
+    )
+    plotly_style_2 = copy.deepcopy(plotly_style)
+    plotly_style_2.pop("xaxis", None)
+    plotly_style_2.pop("yaxis", None)
+    # --- 5. Layout Final ---
     fig.update_layout(
         title=chart_title,
         xaxis_title="Hora del Día (0-23)",
         yaxis_title=y_label,
-        **plotly_style,
+        showlegend=False, # La leyenda "Volumen" y "Punto" no aporta valor
+        
+        # --- Ejes mejorados ---
+        xaxis=dict(
+            tickmode='linear', # Forzar ticks para cada hora
+            dtick=1
+        ),
+        yaxis=dict(
+            rangemode="tozero" # Asegurar que el eje Y empiece en 0
+        ),
+        # --- Fin ejes ---
+        
+        **plotly_style_2,
     )
+    
+    # Asegurar que los estilos de hover se apliquen correctamente
+    fig.update_layout(hoverlabel=plotly_style.get('hoverlabel'))
 
     return fig
-
