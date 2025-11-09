@@ -12,11 +12,12 @@ plotly_style = {
     "plot_bgcolor": "rgba(0,0,0,0)",
     "font": {
         "color": TEXT_COLOR,
-        "family": "Inter, Roboto, 'Segoe UI', Arial, sans-serif",
-        "size": 12,
+        "family": "Montserrat, 'Fira Sans', Poppins, 'Fira Sans', Montserrat, sans-serif",
+        "size": 14,  # un poco más grande que antes
     },
     "colorway": [CONTRAST_COLOR, "#6c757d", "#9ad0f5", "#f1c40f", "#e74c3c"],
-    "legend": {"bgcolor": "rgba(0,0,0,0)", "borderwidth": 0, "orientation": "h"},
+    #"legend": {"bgcolor": "rgba(0,0,0,0)", "borderwidth": 0, "orientation": "h"},
+    "coloraxis_showscale":False,
     "xaxis": {
         "showgrid": True,
         "zeroline": False,
@@ -160,7 +161,6 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
     fig.update_traces(
         texttemplate="<b>%{label}</b><br>%{value:,}",
         hovertemplate="<b>%{label}</b><br>Viajes: %{value:,}<extra></extra>",
-        textfont=dict(size=14, family="Inter, Roboto"),
         marker=dict(
             line=dict(width=0)  # sin bordes para look más moderno
         ),
@@ -170,6 +170,7 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
     # Layout global (usando tu style dict)
     fig.update_layout(
         **plotly_style,
+        showlegend=False,
         title=dict(
             font=dict(size=20, family="Inter, Roboto", color=TEXT_COLOR),
             x=0.18,  # centrado relativo (moderno)
@@ -193,23 +194,53 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
     return fig
 
 # Tab 2
-def tab1_heatmap_distritos(df_pivot, text_format, color_scale, header_text, metric_col):
-    """Heatmap de promedios por distrito."""
+def tab1_heatmap_distritos(df_pivot, df_count, text_format, color_scale, metric_col):
+
     fig = px.imshow(
         df_pivot,
         text_auto=text_format,
         aspect="auto",
         color_continuous_scale=color_scale,
-        title=header_text,
         labels=dict(
             x="Distrito de Llegada",
             y="Distrito de Salida",
             color=f"Promedio de {metric_col}",
         ),
+        title=None,
     )
-    fig.update_xaxes(side="top")
-    fig.update_layout(**plotly_style)
+
+    # Hacemos una copia de plotly_style y aumentamos font general
+    updated_plotly_style = plotly_style.copy()
+    updated_plotly_style["font"] = dict(
+        size=14,  # fuente más grande para todo el gráfico
+        family="Inter, Roboto",
+        color=TEXT_COLOR
+    )
+
+    fig.update_layout(
+        **updated_plotly_style,
+        showlegend=False,
+        coloraxis_colorbar=dict(
+            thickness=12,
+            outlinewidth=0,
+            tickfont=dict(size=11, color=TEXT_COLOR),
+        ),
+        transition=dict(duration=250, easing="cubic-in-out"),
+    )
+
+    # Texto dentro de celdas + hover + borde de celdas
+    fig.update_traces(
+        hovertemplate="<b>%{x} → %{y}</b><br>Promedio: %{z:.2f}<br>Viajes: %{customdata}<extra></extra>",
+        showscale=True,
+        selector=dict(type="heatmap"),
+        customdata=df_count.values,  # Número de viajes
+        xgap=3,  # grosor de la división entre celdas
+        ygap=3,
+    )
+
     return fig
+
+
 from plotly.subplots import make_subplots
 
 def tab2_barras_tiempo_distancia(df_pickup, df_dropoff, borough_order, header_text):

@@ -709,13 +709,22 @@ def register_callbacks(app):
                 .reset_index()
             )
             df_pivot = df_agg.pivot(
-                index="pickup_borough",  # Origen (Eje Y)
-                columns="dropoff_borough",  # Destino (Eje X)
+                index="pickup_borough", 
+                columns="dropoff_borough",  
                 values=metric_col,
-            )
-            df_pivot = df_pivot.fillna(0)  # Rellenar NaNs con 0 (viajes que no ocurren)
+            ).fillna(0)
 
-            fig = tab1_heatmap_distritos(df_pivot, text_format, color_scale, header_text, metric_col)
+            # Contar número de viajes
+            df_count = (
+                df_trips.groupby(["pickup_borough", "dropoff_borough"]).size().reset_index(name="count")
+            )
+            df_count = df_count.pivot(
+                index="pickup_borough",
+                columns="dropoff_borough",
+                values="count"
+            ).fillna(0)
+
+            fig = tab1_heatmap_distritos(df_pivot, df_count, text_format, color_scale, metric_col)
             return fig, header_text
 
         # ---------------------------------------
