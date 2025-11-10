@@ -790,9 +790,9 @@ def register_callbacks(app):
         s_extra = data["extra"].sum()
         s_tip = data["tip_amount"].sum()
 
-        # El "Total Bruto" es la suma de los componentes que fluyen a él
-        s_total_bruto = s_fare + s_extra + s_tip
-        # (Nota: Omitimos mta_tax según la especificación)
+        # # El "Total Bruto" es la suma de los componentes que fluyen a él
+        # s_total_bruto = s_fare + s_extra + s_tip
+        # # (Nota: Omitimos mta_tax según la especificación)
 
         # 2. Calcular sumas de los flujos de salida (Deducciones)
         s_tolls = data["tolls_amount"].sum()
@@ -947,7 +947,7 @@ def register_callbacks(app):
             for _ in range(num_empty_blocks):
                 empty_blocks.append(html.Div(className="waffle-icon-empty"))
 
-            # CORRECCIÓN: Invertir el orden de concatenación
+            # nvertir el orden de concatenación
             # Los bloques vacíos van PRIMERO en la lista para que se muestren ABAJO.
             # Los bloques coloreados van DESPUÉS para que se muestren ARRIBA.
             blocks = empty_blocks + colored_blocks

@@ -239,10 +239,16 @@ viajes_content = html.Div(
                                             id="map-info",
                                             className="mb-3 p-2 border rounded border-light bg-secondary",
                                         ),
-                                        dcc.Graph(
-                                            id="analysis-graph",
-                                            style={"width": "100%", "flex": "1", "max-height":"550px"}, 
-                                        ),
+                                        dcc.Loading(
+                                            id="loading-graph",
+                                            type="circle",  # 'dot', 'circle' o 'default'
+                                            children=html.Div(
+                                                dcc.Graph(
+                                                    id="analysis-graph",
+                                                    style={"width": "100%", "flex": "1", "max-height": "550px"},
+                                                )
+                                            )
+                                        )
                                     ],
                                     className="p-3 d-flex flex-column",
                                 ),
@@ -602,8 +608,6 @@ emisiones_de_carbono_content = html.Div(
                             # flex-grow-1, shadow-lg, border-light, mb-3
                             className="shadow-lg border-light mb-3 flex-grow-1 d-flex flex-column", 
                         ),
-                        # Si quieres añadir el tercer gráfico (Mapa), hazlo de la misma forma:
-                        # dbc.Card(..., className="... flex-grow-1 d-flex flex-column")
                     ],
                     width=8,
                     # Columna toma 100% de altura y es un contenedor flex vertical para los dos Cards

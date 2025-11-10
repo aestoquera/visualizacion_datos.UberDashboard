@@ -14,7 +14,7 @@ plotly_style = {
     "font": {
         "color": TEXT_COLOR,
         "family": "Montserrat, 'Fira Sans', Poppins, 'Fira Sans', Montserrat, sans-serif",
-        "size": 14,  # un poco más grande que antes
+        "size": 14, 
     },
     "colorway": [CONTRAST_COLOR, "#6c757d", "#9ad0f5", "#f1c40f", "#e74c3c"],
     #"legend": {"bgcolor": "rgba(0,0,0,0)", "borderwidth": 0, "orientation": "h"},
@@ -163,7 +163,7 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
         texttemplate="<b>%{label}</b><br>%{value:,}",
         hovertemplate="<b>%{label}</b><br>Viajes: %{value:,}<extra></extra>",
         marker=dict(
-            line=dict(width=0)  # sin bordes para look más moderno
+            line=dict(width=0)  
         ),
         root_color="rgba(0,0,0,0)"  # fondo transparente para el root
     )
@@ -174,7 +174,7 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
         showlegend=False,
         title=dict(
             font=dict(size=20, family="Inter, Roboto", color=TEXT_COLOR),
-            x=0.18,  # centrado relativo (moderno)
+            x=0.18,  # centrado relativo 
             y=0.95,
         ),
         coloraxis_colorbar=dict(
@@ -357,7 +357,6 @@ import copy
 def tab3_sankey_flujo(labels, sources, targets, values):
     """Sankey flujo financiero."""
     
-    # Paleta de colores más estética (formato RGBA)
     # Asumiendo el orden: fare, extra, tip, tolls, surcharge, profit
     link_colors_rgba = [
         "#0b4d19",   # Ingreso principal (Verde)
@@ -487,7 +486,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
     fig.update_traces(opacity=0.7)
     
     # Mejorar la estética del hover (se hereda de plotly_style, pero lo aseguramos)
-    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}<br>Viajes: %{{customdata[1]:,.0f}}<extra></extra>")
+    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}<extra></extra>")
     
     # Ocultar la leyenda de colores, ya que es redundante (solo tenemos dos colores: base y max)
     fig.update_layout(showlegend=False)
