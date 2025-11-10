@@ -1,6 +1,6 @@
 # app.py
 # Punto de entrada principal de la aplicación Dash.
-
+import os
 from dash import Dash
 from dash import dcc
 import dash_bootstrap_components as dbc
@@ -24,4 +24,4 @@ register_callbacks(app)
 
 # --- Ejecutar ---
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8050)))
