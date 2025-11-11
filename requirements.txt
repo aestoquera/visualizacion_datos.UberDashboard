@@ -3,7 +3,7 @@ dash_bootstrap_components==2.0.4
 dash_leaflet==1.0.15
 geopandas==1.1.1
 kagglehub==0.3.13
-numpy==2.3.4
+numpy==2.2.6
 pandas==2.3.3
 plotly==5.13.1
 Shapely==2.1.2
