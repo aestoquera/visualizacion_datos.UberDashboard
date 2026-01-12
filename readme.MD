@@ -105,7 +105,7 @@ El procesamiento de los datos se realizó en el notebook **`data_preprocessing.i
 
 2. **Asignación geoespacial de distritos:**  
    Se implementó un proceso de unión espacial (*spatial join*) entre las coordenadas de inicio y fin del viaje y los límites geográficos de los distritos de Nueva York.  
-   Este procedimiento permite identificar a qué **borough** pertenece cada punto.  
+   Este procedimiento permite identificar a qué **distrito** pertenece cada punto.  
    *(Ver código en la sección de procesamiento geoespacial).*
 
 3. **Transformación de variables categóricas:**  
@@ -118,7 +118,7 @@ El procesamiento de los datos se realizó en el notebook **`data_preprocessing.i
 ---
 
 ## 🌍 Procesamiento Geoespacial
-El siguiente fragmento muestra cómo se asignan los distritos a las coordenadas de inicio y fin de cada viaje mediante un proceso de unión espacial sobre los límites oficiales de los *boroughs* de Nueva York:
+El siguiente fragmento muestra cómo se asignan los distritos a las coordenadas de inicio y fin de cada viaje mediante un proceso de unión espacial sobre los límites oficiales de los *distritos* de Nueva York:
 
 ```python
 # --- PROCESAMIENTO GEOESPACIAL ---

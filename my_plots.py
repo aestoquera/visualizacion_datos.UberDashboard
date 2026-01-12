@@ -1,9 +1,11 @@
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objs as go
+import numpy as np
 # Colores globales
 CONTRAST_COLOR = "#5a9ce7"
 TEXT_COLOR = "#c0c0c8"
+CONTRAST_COLOR_2 = "#0d498d"
 
 # Estilo Plotly minimalista, fondo transparente, template tipo dark
 plotly_style = {
@@ -13,10 +15,10 @@ plotly_style = {
     "plot_bgcolor": "rgba(0,0,0,0)",
     "font": {
         "color": TEXT_COLOR,
-        "family": "Montserrat, 'Fira Sans', Poppins, 'Fira Sans', Montserrat, sans-serif",
+        "family": "Montserrat, 'Space Grotesk', Lexend, Inter, system-ui, sans-serif",
         "size": 14, 
     },
-    "colorway": [CONTRAST_COLOR, "#6c757d", "#9ad0f5", "#f1c40f", "#e74c3c"],
+    "colorway": [CONTRAST_COLOR, CONTRAST_COLOR_2, "#6c757d", "#9ad0f5", "#f1c40f", "#e74c3c"],
     #"legend": {"bgcolor": "rgba(0,0,0,0)", "borderwidth": 0, "orientation": "h"},
     "coloraxis_showscale":False,
     "xaxis": {
@@ -44,7 +46,7 @@ plotly_style = {
         
             "bgcolor":"rgba(0,0,0,0.7)",
             "font_size":12,
-            "font_family":"Inter"
+            "font_family":"Montserrat, 'Fira Sans', Poppins, 'Fira Sans', Montserrat, sans-serif",
     }
     
 }
@@ -72,7 +74,7 @@ def stylize_violin(fig, data, column_name, ylabel):
     fig.update_layout(
         **plotly_style,
         title=dict(
-            font=dict(size=20, family="Inter, Roboto", color=TEXT_COLOR),
+            font=dict(size=20, family="Montserrat, Inter, Roboto", color=TEXT_COLOR),
             x=0.18,
             y=0.95,
         ),
@@ -119,7 +121,7 @@ def tab1_violin_plot(filtered_data, num_trips):
         y="trip_minutes",
         box=True,
         points=None,
-        title=f"<b>Distribución del Tiempo de Viaje</b><br><sup>{num_trips:,} viajes analizados</sup>",
+        title=f"<b>Distribución del Tiempo de Viaje</b><br><sup>{num_trips:,}".replace(",", ".") + "viajes analizados</sup>",
         color_discrete_sequence=[CONTRAST_COLOR],
     )
     fig = stylize_violin(fig, filtered_data, "trip_minutes", "Minutos de Viaje")
@@ -130,7 +132,7 @@ def tab1_violin_distancia(filtered_data, num_trips):
         y="trip_distance_km",
         box=True,
         points=None,
-        title=f"<b>Distribución de la Distancia de Viaje</b><br><sup>{num_trips:,} viajes analizados</sup>",
+        title=f"<b>Distribución de la Distancia de Viaje</b><br><sup>{num_trips:,}".replace(",", ".") +" viajes analizados</sup>",
         color_discrete_sequence=[CONTRAST_COLOR],
     )
     fig = stylize_violin(fig, filtered_data, "trip_distance_km", "Distancia (km)")
@@ -146,7 +148,7 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
     fig = px.treemap(
         passenger_counts,
         path=[
-            px.Constant(f"Total: {num_trips:,} Viajes"),
+            px.Constant(f"Total: {num_trips:,}".replace(",", ".") +" Viajes"),
             "passenger_count_str",
         ],
         values="frequency",
@@ -155,13 +157,13 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
             "#00123a",  # fondo bajo (dark matte)
             "#7bb9ff",  # contraste/acento
         ],
-        title=f"<b>Frecuencia por Nº de Pasajeros</b><br><sup>{num_trips:,} viajes analizados</sup>",
+        title=f"<b>Frecuencia por Nº de Pasajeros</b><br><sup>{num_trips:,}".replace(",", ".") +" viajes analizados</sup>",
     )
 
     # Estilo visual minimalista
     fig.update_traces(
-        texttemplate="<b>%{label}</b><br>%{value:,}",
-        hovertemplate="<b>%{label}</b><br>Viajes: %{value:,}<extra></extra>",
+        texttemplate="<b>%{label}</b><br>%{value:,}".replace(",", "."),
+        hovertemplate="<b>%{label}</b><br>Viajes: %{value:,}".replace(",", ".")+ "<extra></extra>",
         marker=dict(
             line=dict(width=0)  
         ),
@@ -173,7 +175,7 @@ def tab1_treemap_pasajeros(passenger_counts, num_trips):
         **plotly_style,
         showlegend=False,
         title=dict(
-            font=dict(size=20, family="Inter, Roboto", color=TEXT_COLOR),
+            font=dict(size=20, color=TEXT_COLOR),
             x=0.18,  # centrado relativo 
             y=0.95,
         ),
@@ -214,7 +216,6 @@ def tab1_heatmap_distritos(df_pivot, df_count, text_format, color_scale, metric_
     updated_plotly_style = plotly_style.copy()
     updated_plotly_style["font"] = dict(
         size=14,  # fuente más grande para todo el gráfico
-        family="Inter, Roboto",
         color=TEXT_COLOR
     )
 
@@ -381,7 +382,7 @@ def tab3_sankey_flujo(labels, sources, targets, values):
                 label=labels,
                 color=node_color,
                 # Hovertemplate mejorado para nodos
-                hovertemplate="<b>Nodo:</b> %{label}<br><b>Total Acumulado:</b> $%{value:,.2f}<extra></extra>"
+                hovertemplate="<b>Nodo:</b> %{label}<br><b>Total Acumulado:</b> $%{value:,.2f}".replace(",", ".") + "<extra></extra>"
             ),
             link=dict(
                 source=sources,
@@ -389,7 +390,7 @@ def tab3_sankey_flujo(labels, sources, targets, values):
                 value=values,
                 color=link_colors_rgba,
                 # Hovertemplate mejorado para flujos
-                hovertemplate="<b>De:</b> %{source.label}<br><b>A:</b> %{target.label}<br><b>Monto:</b> $%{value:,.2f}<extra></extra>"
+                hovertemplate="<b>De:</b> %{source.label}<br><b>A:</b> %{target.label}<br><b>Monto:</b> $%{value:,.2f}".replace(",", ".") + "<extra></extra>"
             ),
         )
     )
@@ -450,7 +451,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
     # Definición de colores
     try:
         highlight_color = CONTRAST_COLOR
-        base_color = "#434268" 
+        base_color = CONTRAST_COLOR_2 
     except NameError:
         highlight_color = '#5a9ce7' # Default
         base_color = "#4274a0"     # Default
@@ -466,7 +467,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
     
     # --- 2. Creación del Gráfico (con Plotly Express) ---
 
-    total = hourly["count"].sum()
+    total = np.round(hourly["count"].sum(), 2)
     
     # Usamos 'color_category' para asignar los colores individuales
     fig = px.bar(
@@ -476,7 +477,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
         color='color_category', # Usamos la columna calculada para el color
         color_discrete_map={base_color: base_color, highlight_color: highlight_color}, # Mapeo para asegurar los colores
         labels={"pickup_hour": "Hora (0-23)", y_vals: y_label},
-        title=f"<b>{title_map.get(metric_col, metric_col)}</b> por Hora ({total:,.0f} viajes en el filtro)",
+        title=f"<b>{title_map.get(metric_col, metric_col)}</b> por Hora ({total:,.0f}".replace(",", ".") + " viajes en el filtro)",
         hover_data={"pickup_hour": True, y_vals: ':.2f', "count": True},
     )
 
@@ -486,7 +487,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
     fig.update_traces(opacity=0.7)
     
     # Mejorar la estética del hover (se hereda de plotly_style, pero lo aseguramos)
-    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}<extra></extra>")
+    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}".replace(",", ".") + "<extra></extra>")
     
     # Ocultar la leyenda de colores, ya que es redundante (solo tenemos dos colores: base y max)
     fig.update_layout(showlegend=False)
@@ -500,7 +501,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
     fig.add_annotation(
         x=max_hour,
         y=max_val,
-        text=f"<b>Pico:</b><br>{max_val:,.0f}",
+        text=f"<b>Pico:</b><br>{max_val:,.0f}".replace(",", ".") + "",
         showarrow=True,
         arrowhead=7, # Estilo de flecha simple y limpio
         arrowcolor=highlight_color,
@@ -528,7 +529,7 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
 
 def tab4_co2_treemap(treemap_df):
     """
-    Treemap CO₂ por borough con estética moderna, minimalista y legible.
+    Treemap CO₂ por borough
     """
     
     # 1. Cálculo de métricas y ruta jerárquica
@@ -545,21 +546,21 @@ def tab4_co2_treemap(treemap_df):
         treemap_df,
         # Añadimos la raíz con el total para un contexto jerárquico claro
         path=[
-            px.Constant(f"Total CO₂: {total_co2_kg:,.0f} kg"),
+            px.Constant(f"Total CO₂: {total_co2_kg:,.0f}".replace(",", ".") + " kg"),
             "pickup_borough",
         ],
         values="co2_kg_sum",
         color="co2_kg_sum",  # Colorear por la misma métrica (CO2)
         color_continuous_scale=color_scale,
-        title=f"<b>Emisiones de CO₂ por Borough</b><br><sup>Total: {total_co2_kg:,.0f} kg de CO₂</sup>",
+        title=f"<b>Emisiones de CO₂ por distrito</b><br><sup>Total: {total_co2_kg:,.0f}".replace(",", ".") + " kg de CO₂</sup>",
         hover_data={"co2_kg_sum": True},
     )
 
     # 3. Estilo visual minimalista y legible
     fig.update_traces(
         # Formato de texto: Etiqueta (Borough) y valor (CO2), con formato de miles
-        texttemplate="<b>%{label}</b><br>%{value:,.0f} kg",
-        hovertemplate="<b>%{label}</b><br>CO₂ emitido: %{value:,.0f} kg<extra></extra>",
+        texttemplate="<b>%{label}</b><br>%{value:.2~f} kg",
+        hovertemplate="<b>%{label}</b><br>CO₂ emitido: %{value:.2~f} kg<extra></extra>",
         marker=dict(
             line=dict(width=0)  # Sin bordes (look moderno y limpio)
         ),
@@ -572,7 +573,7 @@ def tab4_co2_treemap(treemap_df):
         showlegend=False,
         # Ajuste del título para centrado relativo y fuente
         title=dict(
-            font=dict(size=20, family=plotly_style.get("font", {}).get("family", "Inter, Roboto"), color=TEXT_COLOR),
+            font=dict(size=20, family=plotly_style.get("font", {}).get("family"), color=TEXT_COLOR),
             x=0.18,  # Ajuste para centrado visual en el dashboard
             y=0.95,
         ),
@@ -613,7 +614,7 @@ def tab5_stem_pop(x_values, y_values, y_label, chart_title):
     max_x = x_values[max_idx]
 
     # Crear listas de colores y tamaños para destacar el máximo
-    base_color = "#4a006d"  # Tu color base
+    base_color = CONTRAST_COLOR_2  
     highlight_color = CONTRAST_COLOR # El color de contraste principal
 
     # Lista de colores: todos base menos el máximo
@@ -658,7 +659,7 @@ def tab5_stem_pop(x_values, y_values, y_label, chart_title):
             line=dict(color='white', width=1) # Borde blanco para definir el círculo
         ),
         # Hovertemplate mejorado para dar formato
-        hovertemplate=f"<b>Hora:</b> %{{x}}:00<br><b>{y_label}:</b> %{{y:,.0f}}<extra></extra>"
+        hovertemplate=f"<b>Hora:</b> %{{x}}:00<br><b>{y_label}:</b> %{{y:,.0f}}".replace(",", ".") + "<extra></extra>"
     ))
 
     # --- 4. Anotación de Flecha Curva ---
@@ -677,7 +678,7 @@ def tab5_stem_pop(x_values, y_values, y_label, chart_title):
     fig.add_annotation(
         x=max_x,
         y=max_val,
-        text=f"<b>Pico máximo:</b><br>{max_val:,.0f}", # Texto de la anotación
+        text=f"<b>Pico máximo:</b><br>{np.round(max_val, 2):}", # Texto de la anotación
         showarrow=True,
         arrowhead=2,           # Estilo de flecha
         arrowsize=1.2,

@@ -155,22 +155,36 @@ def register_callbacks(app):
 
         # Construir timestamps completos y asegurar end > start
         try:
-            start_ts = pd.to_datetime(f"{fixed_date} {start_time}")
-            end_ts = pd.to_datetime(f"{fixed_date} {end_time}")
+            start_dt = pd.to_datetime(start_time)
+            end_dt   = pd.to_datetime(end_time)
         except Exception:
-            start_ts = min_dt
-            end_ts = min_dt + pd.Timedelta(hours=1)
+            start_dt = min_dt
+            end_dt   = min_dt + pd.Timedelta(hours=1)
 
-        if end_ts <= start_ts:
-            end_ts = start_ts + pd.Timedelta(hours=1)
+        # Aseguramos end > start
+        if end_dt <= start_dt:
+            end_dt = start_dt + pd.Timedelta(hours=1)
+
+        # Extraemos solo la hora para filtrar
+        start_t = start_dt.time()
+        end_t   = end_dt.time()
 
         # Filtrar por intervalo horario
         df = data.copy()
+        df["_pickup_time"] = pd.to_datetime(df["tpep_pickup_datetime"]).dt.time
+
         # df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
-        filtered_df = df[
-            (df["tpep_pickup_datetime"] >= start_ts)
-            & (df["tpep_pickup_datetime"] <= end_ts)
-        ].reset_index(drop=False)
+        if end_t > start_t:
+            filtered_df = df[
+                (df["_pickup_time"] >= start_t)
+                & (df["_pickup_time"] <= end_t)
+            ].reset_index(drop=False)
+        else:
+            filtered_df = df[
+                (df["_pickup_time"] >= start_t)
+                | (df["_pickup_time"] <= end_t)
+            ].reset_index(drop=False)
+
         total_after_date = len(filtered_df)
 
         # Si no hay datos en el intervalo
@@ -287,7 +301,7 @@ def register_callbacks(app):
                     ),
                     icon=red_icon if "red_icon" in globals() else None,
                     children=[
-                        dl.Tooltip("Salida"),
+                        dl.Tooltip("Llegada"),
                         dl.Popup(
                             html.Div(
                                 [
@@ -728,11 +742,11 @@ def register_callbacks(app):
             return fig, header_text
 
         # ---------------------------------------
-        # --- OPCIÓN DE PIRÁMIDE (TIME vs DISTANCE) ---
+        # --- OPCIÓN DE  RADAR chart (TIME vs DISTANCE) ---
         # ---------------------------------------
         elif selected_metric == "pyramid":
 
-            header_text = "Doble Pirámide de Flujo: Métrica Promedio por Distrito (Salida vs. Llegada)"
+            header_text = "Gráfico radar doble: comparación del tiempo y la distancia de viaje al llegar y salir de cada distrito"
 
             # --- 1. Añadir datos por Origen (Salida) ---
             df_pickup = (
@@ -805,15 +819,15 @@ def register_callbacks(app):
         # Definición de Nodos y Flujos
         labels = [
             # Nodos de Origen (Col 1)
-            "Tarifa (fare_amount)",  # 0
-            "Extras (extra)",  # 1
-            "Propina (tip_amount)",  # 2
+            "Tarifa",  # 0
+            "Extras",  # 1
+            "Propina",  # 2
             # Nodo Intermedio (Col 2)
             "Total Bruto",  # 3
             # Nodos de Destino (Col 3 y 4)
-            "Peajes (tolls)",  # 4
-            "Recargo (surcharge)",  # 5
-            "GANANCIA NETA (Profit)",  # 6
+            "Peajes",  # 4
+            "Recargo",  # 5
+            "Ganancia neta",  # 6
         ]
 
         sources = [0, 1, 2, 3, 3, 3]  # Índices de 'labels'
@@ -857,6 +871,19 @@ def register_callbacks(app):
         df_waffle["payment_type_str"] = df_waffle["payment_type"].apply(
             lambda x: x if x in tipos_conocidos else DEFAULT_PAYMENT_TYPE
         )
+        payment_type_map_esp = {
+            "Cash": "Efectivo",
+            "Credit card": "Tarjeta de crédito",
+            "Dispute": "Disputa",
+            "No charge": "Sin cargo",
+            "Otros": "Otros",
+        }
+        df_waffle["payment_type_str_esp"] = (
+            df_waffle["payment_type_str"]
+            .map(payment_type_map_esp)
+            .fillna("Otros")
+        )
+
         df_grouped = (
             df_waffle.groupby(["price_bin", "payment_type_str"], observed=False)
             .size()
@@ -889,7 +916,10 @@ def register_callbacks(app):
                             html.Img(
                                 src=ICON_MAP[payment_type], className="waffle-icon"
                             ),
-                            html.Span(payment_type, className="ms-2"),
+                            html.Span(
+                                payment_type_map_esp.get(payment_type, payment_type),
+                                className="ms-2",
+                            ),
                         ],
                         className="d-flex align-items-center me-3",
                     )
@@ -937,7 +967,7 @@ def register_callbacks(app):
                                 html.Img(
                                     src=icon_src,
                                     className="waffle-icon",
-                                    title=f"{payment_type}: {percentage:.1%}",
+                                    title=f"{payment_type_map_esp.get(payment_type, payment_type)}: {percentage:.1%}",
                                 )
                             )
 
@@ -955,10 +985,8 @@ def register_callbacks(app):
             # 5. Crear la barra Waffle
             waffle_bar = html.Div(
                 [
-                    # NUEVO: Etiqueta superior con el número total de viajes
-                    # Se usa formateo con comas para miles (ej. 1,234)
                     html.P(
-                        f"{int(total_trips):,} viajes", 
+                        f"{int(total_trips):,}".replace(",", ".") + " viajes",
                         className="waffle-label-top",
                         style={"textAlign": "center", "fontWeight": "bold", "marginBottom": "4px"}
                     ),
