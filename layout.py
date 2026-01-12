@@ -75,17 +75,17 @@ viajes_content = html.Div(
         dcc.Store(id="filtered-data-store", data=[]),
         dcc.Store(id="fixed-date-store", data=min_date_str),
         dcc.Store(id="filter-applied-flag", data="pickups"),
+        
         dbc.Row(
             [
-                # Columna Izquierda (Mapa - 2/3)
+                # Columna Izquierda (Controles + Mapa)
                 dbc.Col(
                     [
-                        # 1. Controles: Usamos un dbc.Row para alinear horizontalmente el botón y el DatePicker
-                        dbc.CardBody(
-                            [
+                        # Fila de Controles Superiores
+                        dbc.Card(
+                            dbc.CardBody(
                                 dbc.Row(
                                     [
-                                        # icono de info
                                         dbc.Col(
                                             InfoIcon(
                                                 id_prefix="tab1-info",
@@ -104,180 +104,110 @@ viajes_content = html.Div(
                                             width=1,
                                             className="d-flex align-items-center"
                                         ),
-
-                                        # Columna para el Botón (Aproximadamente 4 unidades de ancho)
                                         dbc.Col(
-                                            dbc.Button(
-                                                "Mostrando salidas",
-                                                id="toggle-view-btn",
-                                                color="light",
-                                                className="w-100",
-                                            ),
-                                            width=4,
-                                            className="d-flex flex-column justify-content-end", 
+                                            dbc.Button("Mostrando salidas", id="toggle-view-btn", color="light", className="w-100"),
+                                            xs=12, sm=4, className="mb-2 mb-sm-0"
                                         ),
-                                        
-                                        # Columna para el Filtro de Fecha (Aproximadamente 8 unidades de ancho)
                                         dbc.Col(
-                                            html.Div(
-                                                [
-                                                    html.H6(
-                                                        "Filtro por Hora de Recogida",
-                                                        className="text-secondary mb-0",
-                                                    ),
-                                                    dbc.Row(
-                                                        [
-                                                            dbc.Col(
-                                                                html.Div(
-                                                                    [
-                                                                        html.Label(
-                                                                            "Hora inicio",
-                                                                            className="small",
-                                                                        ),
-                                                                        dbc.Input(
-                                                                            id="start-time-input",
-                                                                            type="time",
-                                                                            value=default_start_time,
-                                                                            className="form-control",
-                                                                        ),
-                                                                    ]
-                                                                ),
-                                                                width=6,
-                                                            ),
-                                                            dbc.Col(
-                                                                html.Div(
-                                                                    [
-                                                                        html.Label(
-                                                                            "Hora fin",
-                                                                            className="small",
-                                                                        ),
-                                                                        dbc.Input(
-                                                                            id="end-time-input",
-                                                                            type="time",
-                                                                            value=default_end_time,
-                                                                            className="form-control",
-                                                                        ),
-                                                                    ]
-                                                                ),
-                                                                width=6,
-                                                            ),
-                                                            # Store con la fecha fija (minima)
-                                                            dcc.Store(
-                                                                id="fixed-date-store",
-                                                                data=min_date_str,
-                                                            ),
-                                                        ],
-                                                        className="mt-2",
-                                                    ),
-                                                    # html.Div(html.Small(f"Fecha fija: {min_date_str}", className="text-muted"), className="mt-1")
-                                                ]
-                                            ),
-                                            width=7,
+                                            html.Div([
+                                                html.H6("Filtro por Hora de Recogida", className="text-secondary mb-1 small"),
+                                                dbc.Row([
+                                                    dbc.Col(dbc.Input(id="start-time-input", type="time", value=default_start_time), width=6),
+                                                    dbc.Col(dbc.Input(id="end-time-input", type="time", value=default_end_time), width=6),
+                                                ], className="g-2")
+                                            ]),
+                                            xs=12, sm=7
                                         ),
                                     ],
-                                    className="g-3 align-items-end", 
+                                    className="align-items-center",
                                 )
-                            ],
-                            className="g-3"
+                            ),
+                            className="shadow-sm mb-3 border-light",
+                            color="dark",
                         ),
+                        
                         # Bloque del Mapa
                         dbc.Card(
                             [
-                                dbc.CardHeader(
-                                    "Mapa Interactivo de Viajes",
-                                    className="fw-bold bg-dark text-light",
-                                ),
+                                dbc.CardHeader("Mapa Interactivo de Viajes", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
-                                    html.Div(
-                                        dl.Map(
-                                            id="map",
-                                            center=[center_lat, center_lon],
-                                            zoom=13,
-                                            children=[html.Div(id="map-tiles"),],
-                                            style={"width": "100%", "flex": "1", "max-height":"550px"}, 
-
-                                        ),
-                                        # Convertimos este Div en un contenedor flex para que el mapa crezca
-                                        className="d-flex flex-column h-100", 
+                                    dl.Map(
+                                        id="map",
+                                        center=[center_lat, center_lon],
+                                        zoom=13,
+                                        children=[html.Div(id="map-tiles")],
+                                        # IMPORTANTE: Altura fija mínima para robustez
+                                        style={"width": "100%", "height": "550px"} 
                                     ),
-                                # CardBody debe ser un contenedor flex vertical para que su hijo crezca
-                                className="d-flex flex-column p-0", 
+                                    className="p-0"
                                 )
-                                
                             ],
-                            # flex-grow-1, h-100, d-flex flex-column. Crece para llenar el espacio disponible
-                            className="shadow-lg border-light flex-grow-1 d-flex flex-column h-100",
-                        ), 
+                            className="shadow-lg border-light flex-grow-1",
+                            color="dark",
+                        ),
                     ],
-                    width=8,
-                    # La columna entera debe ser un contenedor flex vertical
-                    className="h-100 d-flex flex-column",
+                    # Responsividad: Full width en móvil, 8/12 en escritorio
+                    xs=12, lg=8,
+                    className="d-flex flex-column mb-4 mb-lg-0"
                 ),
-                # Columna Derecha (Gráficos - 1/3)
+
+                # Columna Derecha (Análisis)
                 dbc.Col(
                     [
                         dbc.Card(
                             [
-                                dbc.CardHeader(
-                                    "Análisis de Viajes Seleccionados",
-                                    className="fw-bold bg-dark text-light",
-                                ),
+                                dbc.CardHeader("Análisis de Viajes Seleccionados", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
                                     [
                                         dcc.Dropdown(
                                             id="analysis-dropdown",
                                             options=[
                                                 {"label": "Número de pasajeros", "value": "passengers"},
-                                                {"label": "Distribución del tiempo de viaje", "value": "trip_time"},
-                                                {"label": "Distribución de la distancia de viaje", "value": "trip_distance"},
+                                                {"label": "Distribución del tiempo", "value": "trip_time"},
+                                                {"label": "Distribución de la distancia", "value": "trip_distance"},
                                             ],
                                             value="passengers",
                                             clearable=False,
                                             className="mb-3",
                                         ),
-                                        html.Div(
-                                            id="map-info",
-                                            className="mb-3 p-2 border rounded border-light bg-secondary",
-                                        ),
+                                        html.Div(id="map-info", className="mb-3 p-2 border rounded border-light bg-secondary"),
                                         dcc.Loading(
                                             id="loading-graph",
-                                            type="circle",  # 'dot', 'circle' o 'default'
-                                            children=html.Div(
-                                                dcc.Graph(
-                                                    id="analysis-graph",
-                                                    style={"width": "100%", "flex": "1", "max-height": "550px"},
-                                                )
+                                            children=dcc.Graph(
+                                                id="analysis-graph",
+                                                # Altura mínima para que el gráfico no sea un "fideo"
+                                                style={"width": "100%", "height": "500px"},
+                                                responsive=True
                                             )
                                         )
                                     ],
-                                    className="p-3 d-flex flex-column",
+                                    className="d-flex flex-column",
                                 ),
                             ],
-                            # h-100, d-flex flex-column. Ocupa 100% de la columna y es contenedor flex
-                            className="shadow-lg border-light h-100 d-flex flex-column",
+                            className="shadow-lg border-light h-100",
+                            color="dark",
                         )
                     ],
-                    width=4,
-                    # La columna entera debe ser un contenedor flex vertical
-                    className="h-100 d-flex flex-column",
+                    xs=12, lg=4,
                 ),
             ],
-            # La Row principal crece para ocupar el 100% del contenedor viajes_content
-            className="mt-4 flex-grow-1",
+            className="g-4" # Gutter (espaciado) entre columnas
         ),
     ],
-    # Contenedor principal. Fija la altura y se convierte en contenedor flex vertical.
-    style={"height": "80vh", "max-height":"85vh"},
-    className="p-4 d-flex flex-column",
+    className="p-4",
+    style={
+        "minHeight": "100vh", # Forzamos a que ocupe al menos la pantalla completa
+        "overflowY": "auto",  # Si el contenido (550px + 500px + controles) excede la pantalla, sale scroll
+        "overflowX": "hidden"
+    }
 )
-
 
 # Contenido para la pestaña Distritos
 distritos_content = html.Div(
     [
         dbc.Row(
             [
-                # Columna Izquierda (Gráfico)
+                # Columna del Gráfico
                 dbc.Col(
                     [
                         dbc.Card(
@@ -290,98 +220,76 @@ distritos_content = html.Div(
                                     [
                                         dcc.Graph(
                                             id="distritos-graph",
-                                            style={"flex": "1"},
-                                            responsive=True
+                                            responsive=True,
+                                            # Establecemos una altura mínima para que el gráfico no se colapse
+                                            style={"minHeight": "500px", "height": "100%"}
                                         )
-                                    ]
+                                    ],
+                                    className="d-flex flex-column",
                                 ),
                             ],
-                            className="shadow-lg border-light h-100 d-flex flex-column",
+                            className="shadow-lg border-light h-100",
+                            color="dark",
                         )
                     ],
-                    width=9,
+                    # Responsividad: 12 columnas en móvil (xs), 9 en escritorio (lg)
+                    xs=12, lg=9,
+                    className="mb-4 mb-lg-0" # Margen inferior solo en móvil
                 ),
-                # Columna Derecha (Controles)
+                # Columna de Controles
                 dbc.Col(
                     [
                         dbc.Card(
                             [
                                 dbc.CardHeader(
-                                    dbc.Row(
-                                        [
-                                            # dbc.Col(
-                                            #     InfoIcon(
-                                            #         id_prefix="tab1-info",
-                                            #         content_dict={
-                                            #             "b": "🏢 Información agrupada por distritos",
-                                            #             "p": "Observa el tiempo y distancia requeridos para ir de un distrito a otro"
-                                            #         }
-                                            #     ),
-                                            #     width="auto",
-                                            #     className="d-flex align-items-center"
-                                            # ),
-                                            dbc.Col(
-                                                "Control de Métrica",
-                                                className="d-flex align-items-center"
-                                            ),
-                                        ],
-                                        className="g-2"
-                                    ),
+                                    "Control de Métrica",
                                     className="fw-bold bg-dark text-light",
                                 ),
                                 dbc.CardBody(
                                     [
-                                        html.P(
-                                            "Seleccione la visualización:",
-                                            className="text-light",
-                                        ),
+                                        html.P("Seleccione la visualización:", className="text-light"),
                                         dcc.Dropdown(
                                             id="distritos-dropdown",
                                             options=[
-                                                {
-                                                    "label": "Mostrar Distancia Promedio (Heatmap)",
-                                                    "value": "distance",
-                                                },
-                                                {
-                                                    "label": "Mostrar Tiempo Promedio (Heatmap)",
-                                                    "value": "time",
-                                                },
-                                                {
-                                                    "label": "Comparar Tiempo vs Distancia (Pirámide)",
-                                                    "value": "pyramid",
-                                                },
+                                                {"label": "Distancia Promedio", "value": "distance"},
+                                                {"label": "Tiempo Promedio", "value": "time"},
+                                                {"label": "Comparar Tiempo vs Distancia", "value": "pyramid"},
                                             ],
                                             value="distance",
                                             clearable=False,
                                             className="mb-3",
-                                            style={"flex": "1"}
                                         ),
                                     ]
                                 ),
                             ],
-                            className="shadow-lg border-light d-flex flex-column flex-grow-1",
+                            className="shadow-lg border-light",
+                            color="dark",
+                            style={"minHeight": "200px"} # Robustez para los controles
                         )
                     ],
-                    width=3,
-                    className="shadow-lg border-light h-100 d-flex flex-column",
+                    xs=12, lg=3,
                 ),
             ],
-            className="mt-4 h-100",
+            className="g-4", # Añade espacio (gutter) entre columnas de forma limpia
         )
     ],
-    className="p-4 d-flex flex-column",
-    style={"height": "85vh"} 
+    className="p-4",
+    style={
+        "height": "auto",       # Permite que crezca si es necesario
+        "minHeight": "90vh",    # Mantiene una presencia visual importante
+        "overflowY": "auto",    # Habilita el scroll vertical si el contenido es muy grande
+        "overflowX": "hidden"   # Evita el scroll horizontal molesto
+    }
 )
 
 # ----------------------------------------------------------------------
 # --- CONTENIDO DE LA PESTAÑA PAGOS ---
 # ----------------------------------------------------------------------
-
 pagos_content = html.Div(
     [
         dbc.Row(
             [
-                # --- Columna Izquierda: Waffle Plot (2/3) 
+                # --- Columna Izquierda: Waffle Plot (8/12 en escritorio, Full en móvil)
                 dbc.Col(
                     [
                         dbc.Card(
@@ -391,26 +299,23 @@ pagos_content = html.Div(
                                     className="fw-bold bg-dark text-light",
                                 ),
                                 dbc.CardBody(
-                                    # El CardBody necesita ser un contenedor flex para que su contenido (el Div) crezca
                                     html.Div(
                                         id="waffle-plot-container",
-                                        # 'flex: 1' para que el Div ocupe todo el espacio restante dentro del CardBody
-                                        style={"flex": "1"}, 
+                                        # Establecemos un mínimo de 450px para que el waffle no se vuelva ilegible
+                                        style={"minHeight": "450px", "width": "100%"} 
                                     ),
-                                    # 'd-flex flex-column' permite que el div interno crezca
                                     className="p-3 d-flex flex-column",
                                 ),
                             ],
-                            # h-100 para que la Card ocupe el 100% de la altura de la Columna
+                            color="dark",
                             className="shadow-lg border-light h-100 d-flex flex-column",
-                            #style={"height": "80vh"} 
                         )
                     ],
-                    width=8,  # Ocupa 2/3 del ancho
-                    # La columna debe tomar 100% de la altura de la Row
-                    className="h-100", 
+                    xs=12, lg=8,
+                    className="mb-4 mb-lg-0" # Espacio inferior cuando se apilan
                 ),
-                # --- Columna Derecha: Gráfico Sankey (1/3) 
+                
+                # --- Columna Derecha: Gráfico Sankey (4/12 en escritorio, Full en móvil)
                 dbc.Col(
                     [
                         dbc.Card(
@@ -422,30 +327,29 @@ pagos_content = html.Div(
                                 dbc.CardBody(
                                     dcc.Graph(
                                         id="sankey-graph", 
-                                        # 'flex: 1' para que el dcc.Graph ocupe todo el CardBody
-                                        style={"flex": "1"},
-                                        responsive=True # Ayuda a que Plotly.js se ajuste al nuevo tamaño
+                                        responsive=True,
+                                        # El Sankey necesita altura para separar los nodos
+                                        style={"minHeight": "500px", "height": "100%"}
                                     ),
-                                    # CardBody sin padding (p-0) debe ser un contenedor flex
                                     className="p-3 d-flex flex-column",
                                 ),
                             ],
-                            # La Card debe ser y 'd-flex flex-column' para que CardBody pueda crecer
                             className="shadow-lg border-light h-100 d-flex flex-column",
                         )
                     ],
-                    width=4,  # Ocupa 1/3 del ancho
-                    # La columna también debe tomar 100% de la altura de la Row
-                    className="h-100", 
+                    xs=12, lg=4,
                 ),
             ],
-            # La Row necesita crecer para ocupar todo el espacio del Div padre
-            className="mt-4 flex-grow-1",
+            # Eliminamos flex-grow-1 para dejar que el contenido defina su altura natural o mínima
+            className="mt-4 g-4",
         )
     ],
-    # El Div principal establece la altura total (75vh) y es el contenedor Flexbox raíz
-    className="p-4 d-flex flex-column",
-    style={"height": "80vh"} 
+    className="p-4",
+    style={
+        "minHeight": "100vh", # Ocupa toda la pantalla disponible
+        "overflowY": "auto",   # Habilita scroll si los minHeight sumados superan la pantalla
+        "overflowX": "hidden"
+    }
 )
 
 # --- LAYOUT DE LA PESTAÑA DE EVOLUCIÓN ---
@@ -478,7 +382,6 @@ evolucion_content = html.Div(
                                     ),
                                     dcc.Graph(
                                         id="lollipop-chart",
-                                        # ELIMINADO: style={"height": "600px"}
                                         style={"flex": "1"}, # El gráfico "crece" para llenar el espacio restante
                                         responsive=True # Asegura que Plotly se redibuje al cambiar el tamaño
                                     ),
@@ -486,6 +389,7 @@ evolucion_content = html.Div(
                                 className="d-flex flex-column flex-grow-1" # El CardBody crece y apila a sus hijos
                             ),
                         ],
+                        color="dark",
                         className="shadow-lg border-light h-100 d-flex flex-column", # La Card llena la Columna y es un contenedor flex
                     ),
                     width=12,
@@ -506,7 +410,7 @@ emisiones_de_carbono_content = html.Div(
     [
         dbc.Row(
             [
-                # COLUMNA DE CONTROLES (width=4)
+                # COLUMNA DE CONTROLES (width=4 en LG, 12 en XS)
                 dbc.Col(
                     [
                         dbc.Card(
@@ -517,110 +421,102 @@ emisiones_de_carbono_content = html.Div(
                                 ),
                                 dbc.CardBody(
                                     [
-                                        # Todo el contenido de filtros tiene altura NATURAL (no crece)
                                         html.Div(
                                             [
-                                                html.Label("Borough (Pickup)"),
+                                                html.Label("Distrito", className="fw-bold"),
                                                 dcc.Dropdown(
                                                     id="borough-dropdown",
                                                     options=[{"label": "Todos", "value": "ALL"}],
                                                     value=["ALL"],
                                                     multi=True,
-                                                    placeholder="Selecciona borough(s)...",
+                                                    placeholder="Selecciona distrito(s)...",
+                                                    className="mb-3"
                                                 ),
-                                                html.Br(),
-                                                html.Label("Rango de horas (pickup)"),
-                                                dcc.RangeSlider(
-                                                    id="hour-range-slider",
-                                                    min=0, max=23, step=1, value=[0, 23],
-                                                    marks={i: str(i) for i in range(0, 24, 3)},
-                                                    tooltip={"placement": "bottom", "always_visible": False},
+                                                html.Label("Rango de horas (pickup)", className="fw-bold"),
+                                                html.Div(
+                                                    dcc.RangeSlider(
+                                                        id="hour-range-slider",
+                                                        min=0, max=23, step=1, value=[0, 23],
+                                                        marks={i: str(i) for i in range(0, 24, 6)},
+                                                        tooltip={"placement": "bottom", "always_visible": False},
+                                                    ),
+                                                    className="px-2 mb-4"
                                                 ),
-                                                html.Br(),
-                                                html.Label("Métrica de CO₂"),
+                                                html.Label("Métrica de CO₂", className="fw-bold"),
                                                 dcc.RadioItems(
                                                     id="metric-radio",
                                                     options=[
-                                                        {"label": "CO₂ total por viaje", "value": "co2_kg_trip"},
-                                                        #{"label": "CO₂ por km (kg/km)", "value": "co2_kg_per_km"},
-                                                        {"label": "CO₂ por pasajero (kg/pax)", "value": "co2_kg_per_passenger"},
+                                                        {"label": " CO₂ total por viaje", "value": "co2_kg_trip"},
+                                                        {"label": " CO₂ por pasajero (kg/pax)", "value": "co2_kg_per_passenger"},
                                                     ],
                                                     value="co2_kg_trip",
-                                                    inline=False,
+                                                    labelStyle={"display": "block", "marginBottom": "5px"},
                                                 ),
                                                 html.Hr(),
                                             ],
                                         )
                                     ],
-                                    className="p-2 flex-grow-1" # Permitimos que CardBody crezca si la Card lo necesita
+                                    className="p-3"
                                 ),
                             ],
-                            className="shadow-sm border-light h-100", # Ocupa el 100% de la Columna
+                            color="dark",
+                            className="shadow-sm border-light",
+                            style={"minHeight": "400px"} # Robustez: los filtros siempre legibles
                         ),
                     ],
-                    width=4,
-                    className="h-100 d-flex flex-column", # Columna toma 100% de altura y es un contenedor flex
+                    xs=12, lg=4,
+                    className="mb-4 mb-lg-0"
                 ),
-                # COLUMNA DE GRÁFICOS (width=8)
+                
+                # COLUMNA DE GRÁFICOS (width=8 en LG, 12 en XS)
                 dbc.Col(
                     [
-                        # PRIMER GRÁFICO (Se le permite crecer, pero tiene un mínimo)
+                        # PRIMER GRÁFICO: Emisiones Horarias
                         dbc.Card(
                             [
-                                dbc.CardHeader(
-                                    "Emisiones horarias (Total / km / pax)",
-                                    className="fw-bold bg-dark text-light",
-                                ),
+                                dbc.CardHeader("Emisiones horarias", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
                                     dcc.Graph(
                                         id="co2-hourly-graph",
-                                        # Eliminamos la altura fija. Usamos flex: 1 para que tome la mitad del espacio restante
-                                        style={"flex": "1"}, 
-                                        responsive=True 
+                                        responsive=True,
+                                        style={"height": "400px"} # Altura fija mínima de seguridad
                                     ),
-                                    # CardBody es flex-column para que el dcc.Graph pueda crecer
-                                    className="p-2 d-flex flex-column", 
+                                    className="p-2", 
                                 ),
                             ],
-                            # flex-grow-1, shadow-lg, border-light, mb-3
-                            # El mb-3 es un margen que no queremos que flex-grow absorba
-                            className="shadow-lg border-light mb-3 flex-grow-1 d-flex flex-column", 
+                            color="dark",
+                            className="shadow-lg border-light mb-4", 
                         ),
-                        # SEGUNDO GRÁFICO (Se le permite crecer y tiene una preferencia de espacio)
+                        
+                        # SEGUNDO GRÁFICO: Treemap
                         dbc.Card(
                             [
-                                dbc.CardHeader(
-                                    "Contribución de CO₂ (Treemap)",
-                                    className="fw-bold bg-dark text-light",
-                                ),
+                                dbc.CardHeader("Contribución de CO₂ (Treemap)", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
                                     dcc.Graph(
                                         id="co2-treemap-graph",
-                                        # ELIMINADO: style={"height": "500px"}
-                                        # Usamos flex: 1 para que tome la mitad del espacio restante
-                                        style={"flex": "1"}, 
-                                        responsive=True
+                                        responsive=True,
+                                        style={"height": "500px"} # El Treemap necesita más espacio vertical
                                     ),
-                                    # CardBody es flex-column para que el dcc.Graph pueda crecer
-                                    className="p-2 d-flex flex-column",
+                                    className="p-2",
                                 ),
                             ],
-                            # flex-grow-1, shadow-lg, border-light, mb-3
-                            className="shadow-lg border-light mb-3 flex-grow-1 d-flex flex-column", 
+                            color="dark",
+                            className="shadow-lg border-light", 
                         ),
                     ],
-                    width=8,
-                    # Columna toma 100% de altura y es un contenedor flex vertical para los dos Cards
-                    className="h-100 d-flex flex-column", 
+                    xs=12, lg=8,
                 ),
             ],
-            # La Row crece para llenar el Div principal
-            className="mt-4 flex-grow-1", 
+            className="g-4", 
         )
     ],
-    # Altura total limitada a 75vh y convertido en contenedor flex vertical
-    style={"height": "85vh"},
-    className="p-4 d-flex flex-column",
+    className="p-4",
+    style={
+        "minHeight": "100vh", 
+        "overflowY": "auto", 
+        "overflowX": "hidden"
+    }
 )
 # ----------------------------------------------------------------------
 # --- LAYOUT PRINCIPAL ---
@@ -631,62 +527,55 @@ app_layout = dbc.Container(
         # Stores (Globales)
         dcc.Store(id="map-memory", data="global_view"),
         dcc.Store(id="filtered-data-store", data=[]),
+        
         # Fila 1: Título y Pestañas
         dbc.Row(
-            className="mb-2 mt-2 align-items-center",
-            style={"height": "5vh", "maxHeight": "10vh"},
-            children=[
-                # Título a la izquierda
+            [
+                # Título: En móvil ocupa todo (12), en escritorio la mitad (6)
                 dbc.Col(
                     html.Div(
-                        "Comprendiendo el negocio de Uber en Nueva York",
-                        className="display-6 fw-bold text-light",
+                        "Uber NYC Business Insights", # Título algo más corto para robustez
+                        className="h3 fw-bold text-light mb-0", # h3 es más estable que display-6
                     ),
-                    width={"size": 6},
+                    xs=12, lg=6,
+                    className="d-flex align-items-center justify-content-center justify-content-lg-start mb-3 mb-lg-0"
                 ),
-                # Pestañas a la derecha
+                # Pestañas: Se alinean al final en escritorio, al centro en móvil
                 dbc.Col(
                     dbc.Tabs(
                         [
-                            dbc.Tab(
-                                label="Viajes",
-                                tab_id="tab-viajes",
-                                tab_class_name="bg-dark text-secondary",
-                                active_tab_class_name="fw-bold text-light bg-primary",
-                            ),
-                            dbc.Tab(
-                                label="Distritos",
-                                tab_id="tab-distritos",
-                                tab_class_name="bg-dark text-secondary",
-                            ),
-                            dbc.Tab(
-                                label="Pagos",
-                                tab_id="tab-pagos",
-                                tab_class_name="bg-dark text-secondary",
-                            ),
-                            dbc.Tab(
-                                label="Evolucion",
-                                tab_id="tab-evolucion",
-                                tab_class_name="bg-dark text-secondary",
-                            ),
-                            dbc.Tab(
-                                label="Emisiones de CO2",
-                                tab_id="tab-emisiones-co2",
-                                tab_class_name="bg-dark text-secondary",
-                            ),
+                            dbc.Tab(label="Viajes", tab_id="tab-viajes"),
+                            dbc.Tab(label="Distritos", tab_id="tab-distritos"),
+                            dbc.Tab(label="Pagos", tab_id="tab-pagos"),
+                            dbc.Tab(label="Evolución", tab_id="tab-evolucion"),
+                            dbc.Tab(label="CO₂", tab_id="tab-emisiones-co2"),
                         ],
                         id="tabs",
                         active_tab="tab-viajes",
-                        className="nav-pills",
+                        # 'nav-pills' es excelente para robustez táctil
+                        className="nav-pills justify-content-center justify-content-lg-end",
                     ),
-                    width={"size": 6, "offset": 0},
-                    className="d-flex justify-content-end",
+                    xs=12, lg=6,
                 ),
             ],
+            # Eliminamos el height fijo de 5vh para evitar cortes de texto
+            className="py-3 border-bottom border-secondary align-items-center", 
         ),
-        # Fila 2: Contenido de la pestaña activa (cargado por callback)
-        dbc.Row(dbc.Col(html.Div(id="content-div", className="p-0"), width=12)),
+
+        # Fila 2: Contenido de la pestaña activa
+        dbc.Row(
+            dbc.Col(
+                html.Div(id="content-div", className="p-0"), 
+                width=12
+            ),
+            className="flex-grow-1"
+        )
     ],
     fluid=True,
-    className="bg-dark text-light p-4",
+    className="bg-dark text-light min-vh-100 d-flex flex-column",
+    style={
+        "overflowX": "hidden", # Evita desplazamiento horizontal accidental
+        "paddingLeft": "2rem",
+        "paddingRight": "2rem"
+    }
 )
