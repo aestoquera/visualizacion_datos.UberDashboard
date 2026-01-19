@@ -332,11 +332,14 @@ pagos_content = html.Div(
                                     className="fw-bold bg-dark text-light",
                                 ),
                                 dbc.CardBody(
-                                    dcc.Graph(
-                                        id="sankey-graph", 
-                                        responsive=True,
-                                        # El Sankey necesita altura para separar los nodos
-                                        style={"minHeight": "500px", "height": "100%"}
+                                    dcc.Loading(
+                                        id="loading-sankey-graph",
+                                        children=dcc.Graph(
+                                            id="sankey-graph",
+                                            responsive=True,
+                                            style={"minHeight": "500px", "height": "100%"}
+                                        ),
+                                        parent_style={"flex": "1", "display": "flex", "flex-direction": "column"}
                                     ),
                                     className="p-3 d-flex flex-column",
                                 ),
@@ -385,34 +388,40 @@ evolucion_content = html.Div(
                                         ],
                                         value='passenger_count',
                                         inline=True,
-                                        className="mb-4", # <-- Esto toma su altura natural (flex-shrink: 0)
+                                        className="mb-4",
                                     ),
-                                    dcc.Loading(
-                                        id="loading-lollipop-chart",
-                                        style={"width": "100%", "height": "100%"},
-                                        children=dcc.Graph(
-                                            id="lollipop-chart",
-                                            style={"flex": "1"},
-                                            responsive=True
-                                        )
-                                    ),
+                                    # CONTENEDOR DEL GRÁFICO CORREGIDO
+                                    html.Div(
+                                        dcc.Loading(
+                                            children=dcc.Graph(
+                                                id="lollipop-chart",
+                                                style={"height": "100%", "width": "100%"},
+                                                responsive=True
+                                            ),
+                                            type="default",
+                                            parent_style={"flex": "1", "display": "flex", "flex-direction": "column"}
+                                        ),
+                                        className="d-flex flex-column flex-grow-1",
+                                        style={"width": "100%"}
+                                    )
                                 ],
-                                className="d-flex flex-column flex-grow-1" # El CardBody crece y apila a sus hijos
+                                className="d-flex flex-column flex-grow-1"
                             ),
                         ],
                         color="dark",
-                        className="shadow-lg border-light h-100 d-flex flex-column", # La Card llena la Columna y es un contenedor flex
+                        className="shadow-lg border-light h-100 d-flex flex-column",
                     ),
                     width=12,
-                    className="h-100" # La Columna debe llenar la altura de la Fila
+                    className="h-100"
                 )
             ],
-            className="mt-4 flex-grow-1", # La Fila "crece" para llenar el Div principal
+            className="mt-4 flex-grow-1",
         )
     ],
-    className="p-4 d-flex flex-column", # El Div principal es un contenedor flex vertical
+    className="p-4 d-flex flex-column",
     style={"height": "85vh"} 
 )
+
 # ----------------------------------------------------------------------
 # --- LAYOUT EMISIONES CARBONO ---
 # ----------------------------------------------------------------------
@@ -487,10 +496,13 @@ emisiones_de_carbono_content = html.Div(
                             [
                                 dbc.CardHeader("Emisiones horarias", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
-                                    dcc.Graph(
-                                        id="co2-hourly-graph",
-                                        responsive=True,
-                                        style={"height": "400px"} # Altura fija mínima de seguridad
+                                    dcc.Loading(
+                                        id="loading-co2-hourly-graph",
+                                        children=dcc.Graph(
+                                            id="co2-hourly-graph",
+                                            responsive=True,
+                                            style={"height": "400px"}
+                                        )
                                     ),
                                     className="p-2", 
                                 ),
@@ -504,10 +516,13 @@ emisiones_de_carbono_content = html.Div(
                             [
                                 dbc.CardHeader("Contribución de CO₂", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
-                                    dcc.Graph(
-                                        id="co2-treemap-graph",
-                                        responsive=True,
-                                        style={"height": "500px"} # El Treemap necesita más espacio vertical
+                                    dcc.Loading(
+                                        id="loading-co2-treemap-graph",
+                                        children=dcc.Graph(
+                                            id="co2-treemap-graph",
+                                            responsive=True,
+                                            style={"height": "500px"}
+                                        )
                                     ),
                                     className="p-2",
                                 ),
