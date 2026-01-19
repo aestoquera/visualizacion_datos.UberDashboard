@@ -277,39 +277,57 @@ Las emisiones se estimaron con base en metodologías **EMEP/COPERT** y factores 
 #### 1. Consumo de combustible dependiente de la velocidad
 
 $$
-\text{consumo\_combustible\_g\_por\_km}
-= 81.1 - 1.014 \cdot V + 0.0068 \cdot V^2
+C(V) = 81.1 - 1.014 \cdot V + 0.0068 \cdot V^2
 $$
 
-donde \(V\) es la velocidad media del viaje (km/h).
+donde:
 
-#### 2. Conversión de consumo a litros por kilómetro
+- \( C(V) \) es el consumo de combustible en gramos por kilómetro (g/km)  
+- \( V \) es la velocidad media del viaje (km/h)
 
-$$
-\text{litros\_por\_km}
-= \frac{\text{consumo\_g\_por\_km} / 1000}{\rho_{\text{gasolina}}}
-$$
+---
 
-$$\text{con }  \rho_{\text{gasolina}} \approx 0.74 \, \text{kg/L}.$$
-
-#### 3. Conversión a emisiones de CO₂
+### 2. Conversión de consumo a litros por kilómetro
 
 $$
-\text{kgCO2\_por\_km}
-= \text{litros\_por\_km} \times 2.0844
+L_{\text{km}} = \frac{C(V) / 1000}{\rho_{\text{gasolina}}}
 $$
 
-#### 4. Emisiones totales y por pasajero
+con:
 
 $$
-\text{emisiones\_viaje}
-= \text{kgCO2\_por\_km} \times \text{distancia\_km}
+\rho_{\text{gasolina}} \approx 0.74 \,\text{kg/L}
+$$
+
+---
+
+### 3. Conversión a emisiones de CO\(_2\)
+
+$$
+E_{\text{km}} = L_{\text{km}} \times 2.0844
+$$
+
+donde \( E_{\text{km}} \) representa las emisiones de CO\(_2\) en kg por kilómetro.
+
+---
+
+### 4. Emisiones totales y por pasajero
+
+$$
+E_{\text{viaje}} = E_{\text{km}} \times D
 $$
 
 $$
-\text{emisiones\_por\_pasajero}
-= \frac{\text{emisiones\_viaje}}{\max(1, \text{nº\_pasajeros})}
+E_{\text{pasajero}} =
+\frac{E_{\text{viaje}}}{\max\left(1, N_{\text{pasajeros}}\right)}
 $$
+
+donde:
+
+- \( D \) es la distancia total del viaje (km)  
+- \( N_{\text{pasajeros}} \) es el número de pasajeros  
+
+**Codigo:**
 
 ```python
 # --- ESTIMACIÓN DE CO2 ---
