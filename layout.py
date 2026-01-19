@@ -387,10 +387,14 @@ evolucion_content = html.Div(
                                         inline=True,
                                         className="mb-4", # <-- Esto toma su altura natural (flex-shrink: 0)
                                     ),
-                                    dcc.Graph(
-                                        id="lollipop-chart",
-                                        style={"flex": "1"}, # El gráfico "crece" para llenar el espacio restante
-                                        responsive=True # Asegura que Plotly se redibuje al cambiar el tamaño
+                                    dcc.Loading(
+                                        id="loading-lollipop-chart",
+                                        style={"width": "100%", "height": "100%"},
+                                        children=dcc.Graph(
+                                            id="lollipop-chart",
+                                            style={"flex": "1"},
+                                            responsive=True
+                                        )
                                     ),
                                 ],
                                 className="d-flex flex-column flex-grow-1" # El CardBody crece y apila a sus hijos
