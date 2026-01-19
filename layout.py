@@ -105,7 +105,11 @@ viajes_content = html.Div(
                                             className="d-flex align-items-center"
                                         ),
                                         dbc.Col(
-                                            dbc.Button("Mostrando salidas", id="toggle-view-btn", color="light", className="w-100"),
+                                            dbc.Button(
+                                                "Mostrando salidas",
+                                                id="toggle-view-btn",
+                                                className="w-100 btn-modern"
+                                            ),
                                             xs=12, sm=4, className="mb-2 mb-sm-0"
                                         ),
                                         dbc.Col(
@@ -218,12 +222,15 @@ distritos_content = html.Div(
                                 ),
                                 dbc.CardBody(
                                     [
-                                        dcc.Graph(
-                                            id="distritos-graph",
-                                            responsive=True,
-                                            # Establecemos una altura mínima para que el gráfico no se colapse
-                                            style={"minHeight": "500px", "height": "100%"}
+                                        dcc.Loading(
+                                            id="loading-distritos-graph",
+                                            children=dcc.Graph(
+                                                id="distritos-graph",
+                                                responsive=True,
+                                                style={"minHeight": "500px", "height": "100%"}
+                                            )
                                         )
+
                                     ],
                                     className="d-flex flex-column",
                                 ),
@@ -373,7 +380,7 @@ evolucion_content = html.Div(
                                         options=[
                                             {'label': 'Nº Pasajeros', 'value': 'passenger_count'},
                                             {'label': 'Ingresos Totales ($)', 'value': 'total_amount'},
-                                            {'label': 'Minutos Totales (viaje)', 'value': 'trip_minutes'},
+                                            {'label': 'Duración del viaje (minutos)', 'value': 'trip_minutes'},
                                             {'label': 'Distancia Total (km)', 'value': 'trip_distance_km'},
                                         ],
                                         value='passenger_count',
@@ -432,7 +439,7 @@ emisiones_de_carbono_content = html.Div(
                                                     placeholder="Selecciona distrito(s)...",
                                                     className="mb-3"
                                                 ),
-                                                html.Label("Rango de horas (pickup)", className="fw-bold"),
+                                                html.Label("Filtra por hora de recogida", className="fw-bold"),
                                                 html.Div(
                                                     dcc.RangeSlider(
                                                         id="hour-range-slider",
@@ -491,7 +498,7 @@ emisiones_de_carbono_content = html.Div(
                         # SEGUNDO GRÁFICO: Treemap
                         dbc.Card(
                             [
-                                dbc.CardHeader("Contribución de CO₂ (Treemap)", className="fw-bold bg-dark text-light"),
+                                dbc.CardHeader("Contribución de CO₂", className="fw-bold bg-dark text-light"),
                                 dbc.CardBody(
                                     dcc.Graph(
                                         id="co2-treemap-graph",
@@ -534,8 +541,8 @@ app_layout = dbc.Container(
                 # Título: En móvil ocupa todo (12), en escritorio la mitad (6)
                 dbc.Col(
                     html.Div(
-                        "Uber NYC Business Insights", # Título algo más corto para robustez
-                        className="h3 fw-bold text-light mb-0", # h3 es más estable que display-6
+                        "Análisis del negocio de Uber en NY", 
+                        className="h3 fw-bold text-light mb-0", 
                     ),
                     xs=12, lg=6,
                     className="d-flex align-items-center justify-content-center justify-content-lg-start mb-3 mb-lg-0"

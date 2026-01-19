@@ -149,3 +149,38 @@
     text-align: left;
     word-break: break-word;
 }
+
+
+
+/* Botones */
+
+.btn-modern {
+    background: linear-gradient(135deg, #5a9ce7, #4a8bd4);
+    border: none;
+    color: white;
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(90, 156, 231, 0.35);
+    transition: all 0.25s ease;
+}
+
+/* Hover */
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(90, 156, 231, 0.45);
+    background: linear-gradient(135deg, #6aa8f0, #5a9ce7);
+    color: white;
+}
+
+/* Click */
+.btn-modern:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(90, 156, 231, 0.3);
+}
+
+/* Focus (accesibilidad) */
+.btn-modern:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(90, 156, 231, 0.4);
+}

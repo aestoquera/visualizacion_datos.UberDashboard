@@ -355,7 +355,7 @@ def register_callbacks(app):
                     [
                         html.P(f"Viajes realizados en esta hora: 1", className="mb-0 small"),
                         html.P(
-                            f"Viajes visibles (por bounds): 1", className="mb-0 small"
+                            f"Viajes visibles (en pantalla): 1", className="mb-0 small"
                         ),
                         # html.P(
                         #     f"Lat range: {lat_min:.4f} — {lat_max:.4f}",
@@ -642,7 +642,7 @@ def register_callbacks(app):
             )
             passenger_counts.columns = ["passenger_count", "frequency"]
             passenger_counts["passenger_count_str"] = (
-                passenger_counts["passenger_count"].astype(str) + " Pasajeros"
+                passenger_counts["passenger_count"].astype(str) + " pasajero(s)"
             )
 
             fig = tab1_treemap_pasajeros(passenger_counts, num_trips)
@@ -1002,7 +1002,6 @@ def register_callbacks(app):
 
     @app.callback(
         Output("co2-hourly-graph", "figure"),
-        #Output("co2-map-graph", "figure"),
         Output("co2-treemap-graph", "figure"),
         Input("hour-range-slider", "value"),
         Input("borough-dropdown", "value"),
@@ -1122,66 +1121,6 @@ def register_callbacks(app):
         co2_hourly_fig = tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map)
         co2_hourly_fig.update_layout(xaxis=dict(tickmode="linear"))
 
-        # --- 2) MAP: scatter_mapbox ---
-        # Comprobamos coordenadas válidas
-        # if (
-        #     "pickup_latitude" in df.columns
-        #     and "pickup_longitude" in df.columns
-        #     and df["pickup_latitude"].notna().any()
-        #     and df["pickup_longitude"].notna().any()
-        # ):
-        #     # Centrar mapa en la mediana
-        #     center = {
-        #         "lat": df["pickup_latitude"].median(),
-        #         "lon": df["pickup_longitude"].median(),
-        #     }
-        #     # Tamaño relativo: normalizamos co2_kg_trip para tamaño
-        #     size_col = "co2_kg_trip" if "co2_kg_trip" in df.columns else metric_col
-        #     # Evitamos tamaños 0: asignamos una columna auxiliar
-        #     size_series = df[size_col].copy()
-        #     size_series = size_series.fillna(0)
-        #     # Escala simple para tamaño visual
-        #     size_norm = size_series - size_series.min()
-        #     if size_norm.max() > 0:
-        #         size_norm = 5 + 20 * (size_norm / size_norm.max())  # entre 5 y 25
-        #     else:
-        #         size_norm = 6
-
-        #     co2_map_fig = px.scatter_mapbox(
-        #         df,
-        #         lat="pickup_latitude",
-        #         lon="pickup_longitude",
-        #         color=metric_col,
-        #         size=size_norm,
-        #         hover_data=[
-        #             "tpep_pickup_datetime",
-        #             "trip_distance_km",
-        #             "passenger_count",
-        #             "co2_kg_trip",
-        #             "co2_kg_per_km",
-        #             "co2_kg_per_passenger",
-        #             "pickup_borough",
-        #             "dropoff_borough",
-        #         ],
-        #         title="Mapa de pickups — coloreado por métrica CO₂",
-        #         zoom=11,
-        #         center=center,
-        #     )
-        #     co2_map_fig.update_layout(mapbox_style="open-street-map", **plotly_style)
-        # else:
-        #     co2_map_fig = go.Figure()
-        #     co2_map_fig.add_annotation(
-        #         text="No hay coordenadas de pickup disponibles.",
-        #         xref="paper",
-        #         yref="paper",
-        #         x=0.5,
-        #         y=0.5,
-        #         showarrow=False,
-        #         font=dict(size=14, color="#AAAAAA"),
-        #     )
-        #     co2_map_fig.update_layout(**plotly_style)
-
-        # --- 3) TREEMAP: contribución por pickup_borough -> payment_type ---
         # Aseguramos columnas
         if "pickup_borough" not in df.columns:
             df["pickup_borough"] = "Unknown"
@@ -1250,7 +1189,7 @@ def register_callbacks(app):
         metric_labels = {
             'passenger_count': 'Número Total de Pasajeros',
             'total_amount': 'Ingresos Totales ($)',
-            'trip_minutes': 'Minutos Totales de Viaje',
+            'trip_minutes': 'Duración total del Viaje',
             'trip_distance_km': 'Distancia Total Recorrida (km)'
         }
         

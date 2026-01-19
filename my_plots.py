@@ -121,7 +121,7 @@ def tab1_violin_plot(filtered_data, num_trips):
         y="trip_minutes",
         box=True,
         points=None,
-        title=f"<b>Distribución del Tiempo de Viaje</b><br><sup>{num_trips:,}".replace(",", ".") + "viajes analizados</sup>",
+        title=f"<b>Distribución del Tiempo de Viaje</b><br><sup>{num_trips:,}".replace(",", ".") + " viajes en pantalla</sup>",
         color_discrete_sequence=[CONTRAST_COLOR],
     )
     fig = stylize_violin(fig, filtered_data, "trip_minutes", "Minutos de Viaje")
@@ -132,7 +132,7 @@ def tab1_violin_distancia(filtered_data, num_trips):
         y="trip_distance_km",
         box=True,
         points=None,
-        title=f"<b>Distribución de la Distancia de Viaje</b><br><sup>{num_trips:,}".replace(",", ".") +" viajes analizados</sup>",
+        title=f"<b>Distribución de la Distancia de Viaje</b><br><sup>{num_trips:,}".replace(",", ".") +" viajes en pantalla</sup>",
         color_discrete_sequence=[CONTRAST_COLOR],
     )
     fig = stylize_violin(fig, filtered_data, "trip_distance_km", "Distancia (km)")
@@ -141,7 +141,7 @@ def tab1_violin_distancia(filtered_data, num_trips):
 
 def tab1_treemap_pasajeros(passenger_counts, num_trips):
     """
-    Genera un treemap con estética moderna y minimalista (brand-driven)
+    Genera un treemap para la primera pantalla
     """
 
     # Construcción del treemap
@@ -465,29 +465,29 @@ def tab4_co2_horario(hourly, y_vals, y_label, metric_col, title_map):
     # Asigna el color de contraste a la fila con el valor máximo
     hourly.loc[hourly[y_vals] == max_val, 'color_category'] = highlight_color
     
-    # --- 2. Creación del Gráfico (con Plotly Express) ---
+    # --- 2. Creación del Gráfico ---
 
     total = np.round(hourly["count"].sum(), 2)
     
     # Usamos 'color_category' para asignar los colores individuales
     fig = px.bar(
-        hourly,
-        x="pickup_hour",
-        y=y_vals,
-        color='color_category', # Usamos la columna calculada para el color
-        color_discrete_map={base_color: base_color, highlight_color: highlight_color}, # Mapeo para asegurar los colores
-        labels={"pickup_hour": "Hora (0-23)", y_vals: y_label},
-        title=f"<b>{title_map.get(metric_col, metric_col)}</b> por Hora ({total:,.0f}".replace(",", ".") + " viajes en el filtro)",
-        hover_data={"pickup_hour": True, y_vals: ':.2f', "count": True},
-    )
+            hourly,
+            x="pickup_hour",
+            y=y_vals,
+            color='color_category',
+            color_discrete_map={base_color: base_color, highlight_color: highlight_color},
+            labels={"pickup_hour": "Hora (0-23)", y_vals: y_label},
+            title=f"<b>{title_map.get(metric_col, metric_col)}</b> {total:,.0f}".replace(",", ".") + " viajes en el filtro)",
+            hover_data={"pickup_hour": True, "count": True},
+        )
 
-    # --- 3. Aplicación de Conceptos de Visualización Avanzada (go.Figure) ---
+    # --- 3. Extras---
 
     # Aplicar transparencia (Opacidad) a todas las barras
     fig.update_traces(opacity=0.7)
-    
-    # Mejorar la estética del hover (se hereda de plotly_style, pero lo aseguramos)
-    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}".replace(",", ".") + "<extra></extra>")
+
+    # Mejorar la estética del hover
+    fig.update_traces(hovertemplate=f"<b>Hora:</b> %{{x}}<br><b>{y_label}:</b> %{{y:,.0f}}" + "<extra></extra>")
     
     # Ocultar la leyenda de colores, ya que es redundante (solo tenemos dos colores: base y max)
     fig.update_layout(showlegend=False)
@@ -556,18 +556,18 @@ def tab4_co2_treemap(treemap_df):
         hover_data={"co2_kg_sum": True},
     )
 
-    # 3. Estilo visual minimalista y legible
+    # 3. Estilo visual
     fig.update_traces(
         # Formato de texto: Etiqueta (Borough) y valor (CO2), con formato de miles
         texttemplate="<b>%{label}</b><br>%{value:.2~f} kg",
         hovertemplate="<b>%{label}</b><br>CO₂ emitido: %{value:.2~f} kg<extra></extra>",
         marker=dict(
-            line=dict(width=0)  # Sin bordes (look moderno y limpio)
+            line=dict(width=0)  # Sin bordes
         ),
         root_color="rgba(0,0,0,0)"  # Fondo transparente para el root
     )
 
-    # 4. Layout global (usando tu style dict)
+    # 4. Layout global
     fig.update_layout(
         **plotly_style,
         showlegend=False,
